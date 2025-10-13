@@ -61,12 +61,14 @@ function createAndAppendButton(targetContainer, playlistId, isAlreadyEnrolled) {
         enrollButton.innerText = 'Enroll';
         enrollButton.disabled = false;
         enrollButton.style.backgroundColor = 'var(--yt-spec-brand-background-secondary)';
-
+        
         // Add hover effects only for the active button
         enrollButton.addEventListener('mouseenter', () => {
+          if (enrollButton.disabled) return;
           enrollButton.style.backgroundColor = 'var(--yt-spec-brand-background-primary)';
         });
         enrollButton.addEventListener('mouseleave', () => {
+          if (enrollButton.disabled) return;
           enrollButton.style.backgroundColor = 'var(--yt-spec-brand-background-secondary)';
         });
 

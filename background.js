@@ -47,5 +47,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; 
   }
 
+  // --- HANDLER 3: FOR MARKING VIDEOS OF PLAYLIST ---
+  else if (message.type === 'CHECK_VIDEO_STATUS') {
+    const { playlistId, videoId } = message.payload;
+
+    chrome.storage.local.get({ courses: [] }, (result) => {
+      let isEnrolled = false;
+      // Find the course that matches the playlistId
+      const course = result.courses.find(c => c.playlistId === playlistId);
+      if (course && course.videos) {
+        // If the course exists, check if our videoId is in its video list
+        isEnrolled = course.videos.some(v => v.videoId === videoId);
+      }
+      
+      console.log(`Checking video ${videoId} in playlist ${playlistId}. Is enrolled?`, isEnrolled);
+      sendResponse({ isEnrolled: isEnrolled });
+    });
+    
+    console.groupEnd();
+    return true; // Asynchronous response
+  }
+
   console.groupEnd();
 });

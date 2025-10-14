@@ -37,20 +37,18 @@ function injectVideoPanel() {
     return;
   }
 
-  // --- THE FIX IS HERE ---
+// --- THE FIX IS HERE ---
+  // 1. Find our landmark: the playlist renderer itself.
+  const playlistElement = document.querySelector('ytd-playlist-panel-renderer#playlist');
+  
+  // 2. If the landmark exists, get its direct parent. This is the correct container.
+  if (playlistElement) {
+    const parentContainer = playlistElement.parentElement; // This is the key change!
 
-  // 1. The parent container is still correct.
-  const parentContainer = document.querySelector('#panels');
-  
-  // 2. We find the DIRECT CHILD of #panels that we want to insert our panel BEFORE.
-  // This is the correct reference node.
-  const referenceNode = document.querySelector('#panels > ytd-engagement-panel-section-list-renderer');
-  
-  // 3. We check for BOTH the parent and the reference node before proceeding.
-  if (parentContainer && referenceNode) {
+    // 3. Now we can safely create and insert our panel.
     const ourPanel = document.createElement('div');
     ourPanel.id = 'tubetutor-video-panel';
-    ourPanel.innerHTML = '<h1>Hi from TubeTutor!</h1>';
+    ourPanel.innerHTML = '<h1>Hi! We are TubeTutor</h1> <p><strong>We Transform your YouTube playlists into interactive courses</strong></p> <p>Learn smarter with AI-powered study tools :)</p>';
 
     // Style the panel (same as before)
     ourPanel.style.backgroundColor = 'var(--yt-spec-brand-background-solid)'; // Use YT variable
@@ -61,7 +59,7 @@ function injectVideoPanel() {
     ourPanel.style.color = 'var(--yt-spec-text-primary)'; // Use YT variable
 
     // 4. Execute the CORRECT insertion command.
-    parentContainer.insertBefore(ourPanel, referenceNode);
+    parentContainer.insertBefore(ourPanel, playlistElement);
     console.log('[TubeTutor] Video panel successfully injected.');
     
   } else {

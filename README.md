@@ -1,53 +1,43 @@
-# TubeTutor
+# Svelte + Vite
 
-## The Problem
+This template should help get you started developing with Svelte in Vite.
 
-We've all been there. You find a fantastic 20-part Python tutorial or a deep-dive history course on YouTube, ready to learn. A week later, you come back to a sea of red progress bars. Which video were you on? How much time is left? You're passively watching, not actively learning, and the valuable knowledge gets lost as soon as you close the tab. YouTube is the world's biggest classroom, but it lacks the tools of a real classroom.
+## Recommended IDE Setup
 
-## The Solution: TubeTutor
+[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
 
-TubeTutor is a Chrome extension that transforms YouTube playlists into interactive, trackable courses. It acts as a smart layer on top of YouTube, managing your progress and turning passive viewing into active learning with a powerful, on-device AI toolkit. With TubeTutor, you can enroll in any playlist, track your progress automatically, and instantly generate notes, flashcards, and quizzes for any video—all privately and offline.
+## Need an official Svelte framework?
 
-## The "Magic" - Why Built-in AI is a Game Changer
+Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
 
-- **Instantaneous**: When you click "Generate Notes," they appear in a blink. There's no lag, no loading spinner, no waiting for a server. This is the power of the on-device Summarizer API.
+## Technical considerations
 
-- **Completely Private**: Your learning journey—the courses you take, the notes you generate, your quiz scores—is your business. Because all AI processing happens on your device, your data never leaves your computer.
+**Why use this over SvelteKit?**
 
-- **Always Available**: On a plane with no Wi-Fi? You can still review all your notes and practice with your generated flashcards and quizzes. Your classroom is now fully offline.
+- It brings its own routing solution which might not be preferable for some users.
+- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
 
-- **Unlimited & Free**: No API keys, no usage limits, no subscriptions. TubeTutor can help you learn as much as you want, without ever hitting a paywall, because the AI is built right into Chrome.
+This template contains as little as possible to get started with Vite + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
 
-## Refined Demo Flow & User Experience
+Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
 
-This flow is designed to be seamless and "just work" with intuitive design.
+**Why include `.vscode/extensions.json`?**
 
-### Discovery & Enrollment
+Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
 
-A user navigates to a YouTube playlist. The TubeTutor icon in their browser bar lights up, and a clean, non-intrusive button appears on the page: **"Enroll in this Course."**
+**Why enable `checkJs` in the JS template?**
 
-Clicking it adds the playlist to the TubeTutor Dashboard. An elegant overlay appears briefly, confirming enrollment and showing progress: *"Course Added! 0/20 videos complete. Approx. 4 hours remaining."*
+It is likely that most cases of changing variable types in runtime are likely to be accidental, rather than deliberate. This provides advanced typechecking out of the box. Should you like to take advantage of the dynamically-typed nature of JavaScript, it is trivial to change the configuration.
 
-### The Learning Interface
+**Why is HMR not preserving my local component state?**
 
-As the user watches a video, TubeTutor provides a small, collapsible sidebar. This is the **"AI Learning Toolkit."**
+HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/sveltejs/svelte-hmr/tree/master/packages/svelte-hmr#preservation-of-local-state).
 
-- **Generate Notes**: A single click on this button uses the video's transcript and the Summarizer API to instantly produce clean, concise, timestamped bullet points.
-  - *Example: "04:15 - Introduction to variables and data types."*
+If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
 
-- **Generate Flashcards**: Clicking this uses the Prompt API to create a set of Q&A-style flashcards based on the video's key concepts, which the user can flip through to test their knowledge.
-
-- **Take a Quiz**: This uses the Prompt API with a more structured request to generate 3-5 multiple-choice questions about the video's content, providing instant feedback.
-
-### The Course Dashboard
-
-This is the central hub, accessible from the extension's icon. It lists all "enrolled" courses.
-
-- Each course has a clear progress bar, ETA, and a link back to the playlist.
-- Users can expand a course to view all their generated notes, flashcards, and quiz results in one place, creating a comprehensive study guide.
-
-### The "Wow" Feature - The Knowledge Search
-
-The dashboard has a search bar. The user can type a question like, *"What did I learn about 'for loops' in Python?"*
-
-Using the Prompt API, TubeTutor searches across the notes and transcripts of all enrolled courses, providing a consolidated answer with links to the exact moments in the videos where the topic was discussed. This transforms the extension from a simple tracker into a personal, searchable learning database.
+```js
+// store.js
+// An extremely simple external store
+import { writable } from 'svelte/store'
+export default writable(0)
+```

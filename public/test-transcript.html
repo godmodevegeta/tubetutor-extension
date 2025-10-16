@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transcript Test</title>
+</head>
+<body>
+    <h1>Testing YoutubeTranscript Library</h1>
+    <p>Open the browser console to see the results.</p>
+
+    <!-- We need to load the library script. Find it in your node_modules folder -->
+    <!-- The path might be slightly different for you -->
+    <script type="module">
+        import { YoutubeTranscript } from '../node_modules/youtube-transcript/dist/youtube-transcript.esm.js';
+
+        const VIDEO_ID = '1A_CAkYt3GY'; // <-- PUT THE VIDEO ID YOU ARE TESTING HERE
+
+        console.log(`Testing video: ${VIDEO_ID}`);
+
+        console.log('--- Test 1: Default (no language specified) ---');
+        YoutubeTranscript.fetchTranscript(VIDEO_ID)
+            .then(console.log)
+            .catch(console.error);
+
+        console.log('--- Test 2: Requesting "en" (English) ---');
+        YoutubeTranscript.fetchTranscript(VIDEO_ID, { lang: 'en' })
+            .then(console.log)
+            .catch(console.error);
+            
+    </script>
+</body>
+</html>

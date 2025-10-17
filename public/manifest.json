@@ -5,12 +5,15 @@
   "description": "Transforms YouTube playlists into interactive courses with AI-powered study tools.",
   
   "permissions": [
-    "storage",
-    "scripting"
+     "storage",
+     "scripting",
+     "cookies" 
   ],
   
   "host_permissions": [
-    "https://www.youtube.com/*"
+    "https://www.youtube.com/*",
+    "https://*.googlevideo.com/*",
+    "https://tactiq-apps-prod.tactiq.io/*"
   ],
   
   "background": {

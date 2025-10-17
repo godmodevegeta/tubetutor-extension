@@ -26,4 +26,14 @@ export default defineConfig({
       },
     },
   },
+  // --- THIS SECTION IS FOR VITEST ---
+  test: {
+    // This allows us to use 'vi' and 'expect' in our test files
+    // without importing them explicitly.
+    globals: true,
+    // This tells Vitest to simulate a browser-like environment.
+    environment: 'jsdom', 
+    // This points to our setup file where we'll create the chrome mock.
+    setupFiles: './src/tests/setup.js', 
+  },
 });

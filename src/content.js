@@ -1,3 +1,5 @@
+import VideoPanel from './VideoPanel.svelte';
+
 console.log('[TubeTutor] Content script loaded!');
 
 function handleVideoPage() {

@@ -1,4 +1,4 @@
-import { YoutubeTranscript } from 'youtube-transcript';
+import { getSubtitles } from 'youtube-caption-extractor';
 
 console.log('TubeTutor Background Script Loaded!');
 
@@ -69,83 +69,63 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.groupEnd();
     return true; // Asynchronous response
   }
-  
-  // This is the final, hardened version with the User-Agent fix.
+
+
+// This is the new, refactored handler that calls the Tactiq API.
 else if (message.type === 'GET_TRANSCRIPT') {
     const { videoId } = message.payload;
-    
-    const smartFetchTranscript = async () => {
-        // --- ATTEMPT 1: USE THE LIBRARY (Handles XML transcripts) ---
-        try {
-            console.log(`[TubeTutor] Attempt 1: Using 'youtube-transcript' library for ${videoId}`);
-            const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
-            if (transcript && transcript.length > 0) {
-                console.log("[TubeTutor] Success with library (XML transcript).");
-                return { success: true, transcript: transcript.map(t => t.text).join(' ') };
-            }
-        } catch (error) {
-            console.warn(`[TubeTutor] Library failed, which is expected for some videos. Reason: ${error.message}`);
-        }
 
-        // --- ATTEMPT 2: CUSTOM FETCHER (Handles JSON ASR transcripts) ---
-        try {
-            console.log(`[TubeTutor] Attempt 2: Using custom fetcher for JSON transcript.`);
+    const callTactiqApi = async () => {
+        const TACTIQ_API_URL = 'https://tactiq-apps-prod.tactiq.io/transcript';
+        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
-            // --- THE CRITICAL FIX IS HERE ---
-            // We define a standard set of headers to disguise our request.
-            const headers = new Headers({
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
+        try {
+            console.log(`[TubeTutor] Calling Tactiq API for video: ${videoUrl}`);
+
+            // Make a POST request to the API
+            const response = await fetch(TACTIQ_API_URL, {
+                method: 'POST',
+                headers: {
+                    // It's crucial to tell the server we're sending JSON data
+                    'Content-Type': 'application/json'
+                },
+                // The body must be a JSON string
+                body: JSON.stringify({
+                    videoUrl: videoUrl,
+                    langCode: 'en'
+                })
             });
 
-            // Pass the same headers to BOTH fetch calls to be consistent.
-            const videoPageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`, { headers });
-            const videoPageHtml = await videoPageResponse.text();
-
-            const captionsJsonRegex = /"captionTracks":(\[.*?\])/;
-            const match = videoPageHtml.match(captionsJsonRegex);
-
-            if (!match || !match[1]) {
-                throw new Error("Could not find caption track JSON in the page HTML.");
+            // Check if the network request itself was successful
+            if (!response.ok) {
+                throw new Error(`API responded with status: ${response.status}`);
             }
 
-            const captionTracks = JSON.parse(match[1]);
-            const asrTrack = captionTracks.find(track => track.languageCode === 'en' && track.kind === 'asr');
-            
-            if (!asrTrack || !asrTrack.baseUrl) {
-                throw new Error("Could not find a valid English ASR transcript URL.");
-            }
+            const data = await response.json();
 
-            const transcriptResponse = await fetch(asrTrack.baseUrl, { headers });
-            
-            const transcriptText = await transcriptResponse.text();
-            if (!transcriptText) {
-                throw new Error("Custom fetcher received an empty transcript response.");
-            }
-            
-            const transcriptJson = JSON.parse(transcriptText);
-
-            const fullText = transcriptJson.events
-                .filter(event => event.segs)
-                .map(event => event.segs.map(seg => seg.utf8).join(''))
-                .join(' ')
-                .replace(/\n/g, ' ');
-
-            if (fullText.length > 0) {
-                 console.log("[TubeTutor] Success with custom fetcher (JSON transcript).");
-                 return { success: true, transcript: fullText };
+            // Check if the response contains the 'captions' array we expect
+            if (data.captions && data.captions.length > 0) {
+                // If it does, map over the array to get the 'text' from each line
+                // and join them all into a single string.
+                const fullText = data.captions.map(line => line.text).join(' ');
+                
+                console.log("[TubeTutor] Successfully fetched and processed transcript from Tactiq API.");
+                return { success: true, transcript: fullText };
             } else {
-                 throw new Error("Custom fetcher found a transcript but it was empty after parsing.");
+                // This handles cases where the API works but returns no captions
+                throw new Error("API returned a successful response but with no captions.");
             }
 
         } catch (error) {
-            console.error(`[TubeTutor] All attempts to fetch transcript failed. Final error:`, error);
-            return { success: false, error: "No transcripts available for this video. (2)" };
+            console.error(`[TubeTutor] Tactiq API call failed:`, error);
+            // Return a generic error to the user
+            return { success: false, error: "The transcript service is currently unavailable." };
         }
     };
 
-    // The message listener boilerplate
+    // The standard boilerplate to run our async function and send the response
     console.group(`[TubeTutor] Message received: ${message.type}`);
-    smartFetchTranscript().then(response => {
+    callTactiqApi().then(response => {
         sendResponse(response);
         console.groupEnd();
     });

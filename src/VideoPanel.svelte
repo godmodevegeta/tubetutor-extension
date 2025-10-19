@@ -1,119 +1,110 @@
-<script>
-  // This is the "state" of our component. It tracks which tab is currently active.
-  let activeTab = 'Notes'; // Default to the 'Notes' tab
+<!-- File: src/VideoPanel.svelte (The Main Application Shell) -->
 
-  // This function will be called when a tab is clicked
-  function selectTab(tabName) {
-    activeTab = tabName;
-  }
+<script>
+  import NotesView from './NotesView.svelte';
+  import QuizView from './QuizView.svelte';
+  import ChatView from './ChatView.svelte';
+
+  // This script runs inside the iframe, which has access to chrome.* APIs.
+  // We can get the videoId from the iframe's own URL query parameters.
+  const urlParams = new URLSearchParams(window.location.search);
+  const videoId = urlParams.get('videoId');
+
+  let activeView = 'Notes';
+  const views = { Notes: NotesView, Quiz: QuizView, Chat: ChatView };
+
+  // Note: We can add transcript fetching logic back here later,
+  // calling chrome.runtime.sendMessage directly. It will work flawlessly.
 </script>
 
 <div class="tubetutor-panel">
-  <!-- Header Section -->
-  <header class="panel-header">
-    <h2 class="title">TubeTutor</h2>
-    <p class="subtitle">AI Study Assistant</p>
-  </header>
+  <!-- 1. The Header -->
+  <div class="panel-header">
+    <h2 class="header-title">TubeTutor</h2>
+  </div>
 
-  <!-- Menu Bar / Navigation -->
-  <nav class="panel-nav">
-    <button 
-      class="nav-button" 
-      class:active={activeTab === 'Notes'}
-      on:click={() => selectTab('Notes')}>
-      Notes
-    </button>
-    <button 
-      class="nav-button" 
-      class:active={activeTab === 'Quiz'}
-      on:click={() => selectTab('Quiz')}>
-      Quiz
-    </button>
-    <button 
-      class="nav-button" 
-      class:active={activeTab === 'Chat'}
-      on:click={() => selectTab('Chat')}>
-      Chat
-    </button>
-  </nav>
+  <!-- 2. The Tab Navigation Bar -->
+  <div class="tab-nav">
+    <!-- We loop over our views object to create the buttons -->
+    {#each Object.keys(views) as viewName}
+      <button
+        class="tab-button"
+        class:active={activeView === viewName}
+        on:click={() => activeView = viewName}
+      >
+        {viewName}
+      </button>
+    {/each}
+  </div>
 
-  <!-- Content Section (changes based on the active tab) -->
-  <main class="panel-content">
-    {#if activeTab === 'Notes'}
-      <p>You clicked on Notes</p>
-      <!-- The Transcript will go here later -->
-    {:else if activeTab === 'Quiz'}
-      <p>You clicked on Quiz</p>
-      <!-- The AI Quiz feature will go here later -->
-    {:else if activeTab === 'Chat'}
-      <p>You clicked on Chat</p>
-      <!-- The AI Chat feature will go here later -->
-    {/if}
-  </main>
+  <!-- 3. The Dynamic Content Area -->
+  <div class="content-area">
+    <!-- This is the magic of Svelte. The <svelte:component> tag
+         dynamically renders the component specified by 'views[activeView]'.
+         When 'activeView' changes, this component automatically swaps. -->
+    <svelte:component this={views[activeView]} />
+  </div>
 
 </div>
 
+<!-- Note: The style section is now part of the component again.
+     The manual injection in injectVideoPanel.js will need to be updated. -->
 <style>
-  /* This CSS is scoped only to this component */
+  /* --- Main Panel Shell --- */
   .tubetutor-panel {
-    background-color: var(--yt-spec-brand-background-solid);
-    border: 1px solid var(--yt-spec-10-percent-layer);
-    color: var(--yt-spec-text-primary);
-    border-radius: 12px;
-    margin-bottom: 16px;
-    overflow: hidden; /* Ensures child borders don't poke out */
-    font-family: "Roboto", "Arial", sans-serif;
-  }
-
-  .panel-header {
-    padding: 16px;
-    text-align: center;
-    border-bottom: 1px solid var(--yt-spec-10-percent-layer);
-  }
-
-  .title {
-    margin: 0;
-    font-size: 1.8rem;
-    font-weight: 500;
-  }
-
-  .subtitle {
-    margin: 4px 0 0;
-    font-size: 1.2rem;
-    color: var(--yt-spec-text-secondary);
-  }
-
-  .panel-nav {
     display: flex;
-    justify-content: space-around;
-    background-color: var(--yt-spec-badge-chip-background);
+    flex-direction: column;
+    /* We are removing fixed height to allow the content to determine the size */
+    min-height: 400px;
+    width: 402px;
   }
 
-  .nav-button {
-    flex-grow: 1;
-    padding: 12px 16px;
+  /* --- Header --- */
+  .panel-header {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    height: 48px;
+    border-bottom: 1px solid var(--panel-header-border);
+    flex-shrink: 0;
+  }
+  .header-title {
+    font-family: "Roboto", "Arial", sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  /* --- Tab Navigation --- */
+  .tab-nav {
+    display: flex;
+    border-bottom: 1px solid var(--panel-header-border);
+    flex-shrink: 0;
+  }
+  .tab-button {
+    font-family: "Roboto", "Arial", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--panel-text-secondary);
     background-color: transparent;
     border: none;
-    border-bottom: 3px solid transparent;
-    color: var(--yt-spec-text-secondary);
-    font-size: 1.4rem;
-    font-weight: 500;
+    padding: 12px 16px;
     cursor: pointer;
-    transition: all 0.15s ease-in-out;
+    border-bottom: 2px solid transparent; /* Inactive state */
+    margin-bottom: -1px; /* Overlaps the container border */
+  }
+  .tab-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  /* The 'active' class is dynamically applied by Svelte */
+  .tab-button.active {
+    color: var(--panel-text-primary);
+    border-bottom-color: var(--panel-text-primary);
   }
 
-  .nav-button:hover {
-    background-color: var(--yt-spec-10-percent-layer);
-  }
-
-  .nav-button.active {
-    color: var(--yt-spec-text-primary);
-    border-bottom-color: var(--yt-spec-text-primary);
-  }
-
-  .panel-content {
-    padding: 16px;
-    min-height: 200px; /* Gives it some space */
-    font-size: 1.4rem;
+  /* --- Content Area --- */
+  .content-area {
+    flex-grow: 1; /* Takes up all remaining space */
+    overflow-y: auto; /* Content will scroll if it's too long */
   }
 </style>

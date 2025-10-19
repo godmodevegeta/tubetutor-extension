@@ -12,11 +12,10 @@ export default defineConfig({
     rollupOptions: {
       // Define the entry points for your extension
       input: {
-        // The popup is the default HTML entry
         popup: 'index.html', 
-        // Your background and content scripts are separate entries
         background: 'src/background.js',
         content: 'src/content.js',
+        panel: 'panel.html' // The iframe is now a primary entry point
       },
       output: {
         // Configure how the output files are named

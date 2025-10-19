@@ -36,25 +36,43 @@
   });
 </script>
 
-<!-- --- NEW svelte:head BLOCK --- -->
-<!-- This injects styles into the <head> of our iframe's document,
-     allowing us to control the base styles for the entire app. -->
+<!-- --- THE DEFINITIVE THEME FIX --- -->
 <svelte:head>
   <style>
+    /* 1. Define all theme variables on the :root, which is the <html> element
+          inside our iframe. This is the highest possible level. */
+    :root {
+      /* Light Mode Defaults */
+      --panel-bg: #ffffff;
+      --panel-border: rgba(0, 0, 0, 0.1);
+      --panel-text-primary: #0f0f0f;
+      --panel-text-secondary: #606060;
+      --panel-header-border: rgba(0, 0, 0, 0.1);
+      --panel-subtle-bg: #f2f2f2;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        /* Dark Mode Overrides */
+        --panel-bg: #212121;
+        --panel-border: rgba(255, 255, 255, 0.2);
+        --panel-text-primary: #ffffff;
+        --panel-text-secondary: #aaaaaa;
+        --panel-header-border: rgba(255, 255, 255, 0.2);
+        --panel-subtle-bg: #383838;
+      }
+    }
+
+    /* 2. Apply the base theme directly to the body. */
     body {
-      /* Apply our theme variables to the body itself */
       background-color: var(--panel-bg);
       color: var(--panel-text-primary);
       font-family: "Roboto", "Arial", sans-serif;
-
-      /* A standard CSS reset for the body */
       margin: 0;
       padding: 0;
     }
   </style>
 </svelte:head>
-
-
 
 <div class="tubetutor-panel">
   <!-- 1. The Header -->
@@ -86,37 +104,16 @@
 
 </div>
 
-<style>
-  /* :global(:host) block with theme variables remains unchanged */
-  :global(:host) {
-    /* Light Mode */
-    --panel-bg: #ffffff;
-    --panel-border: rgba(0, 0, 0, 0.1);
-    --panel-text-primary: #0f0f0f;
-    --panel-text-secondary: #606060;
-    --panel-header-border: rgba(0, 0, 0, 0.1);
-    --panel-subtle-bg: #f2f2f2;
-  }
-  @media (prefers-color-scheme: dark) {
-    :global(:host) {
-      /* Dark Mode */
-      --panel-bg: #212121;
-      --panel-border: rgba(255, 255, 255, 0.2);
-      --panel-text-primary: #ffffff;
-      --panel-text-secondary: #aaaaaa;
-      --panel-header-border: rgba(255, 255, 255, 0.2);
-      --panel-subtle-bg: #383838;
-    }
-  }
 
-  /* --- Main Panel Shell (MODIFIED) --- */
+<!-- The STYLE section is now much simpler -->
+<style>
+  /* --- Main Panel Shell --- */
   .tubetutor-panel {
     display: flex;
     flex-direction: column;
-    height: 100vh; /* Make the panel fill the entire iframe viewport height */
+    height: 100vh;
     width: 100%;
-    /* The body now provides the background, so this can be transparent */
-    background-color: transparent;
+    background-color: transparent; /* The body provides the background now */
   }
 
   /* --- Header --- */
@@ -129,7 +126,6 @@
     flex-shrink: 0;
   }
   .header-title {
-    font-family: "Roboto", "Arial", sans-serif;
     font-size: 18px;
     font-weight: 500;
     margin: 0;
@@ -142,21 +138,19 @@
     flex-shrink: 0;
   }
   .tab-button {
-    font-family: "Roboto", "Arial", sans-serif;
     font-size: 14px;
     font-weight: 500;
-    color: var(--panel-text-secondary);
+    color: var(--panel-text-secondary); /* This will now inherit correctly */
     background-color: transparent;
     border: none;
     padding: 12px 16px;
     cursor: pointer;
-    border-bottom: 2px solid transparent; /* Inactive state */
-    margin-bottom: -1px; /* Overlaps the container border */
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
   }
   .tab-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--panel-subtle-bg);
   }
-  /* The 'active' class is dynamically applied by Svelte */
   .tab-button.active {
     color: var(--panel-text-primary);
     border-bottom-color: var(--panel-text-primary);
@@ -164,7 +158,7 @@
 
   /* --- Content Area --- */
   .content-area {
-    flex-grow: 1; /* Takes up all remaining space */
-    overflow-y: auto; /* Content will scroll if it's too long */
+    flex-grow: 1;
+    overflow-y: auto;
   }
 </style>

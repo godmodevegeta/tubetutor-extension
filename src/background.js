@@ -64,41 +64,66 @@ async function getTranscript(videoId) {
 
 
 // --- 3. NEW AI SUMMARIZER LOGIC ---
-
 // Store the summarizer instance to avoid re-creating it unnecessarily
 let summarizer = null;
 
 async function getSummaryNotes(transcript) {
+    // Input validation
+    if (!transcript || typeof transcript !== 'string' || transcript.length === 0) {
+        return { success: false, error: "Transcript is invalid or empty." };
+    }
+    
     // A. Check if the AI Summarizer is available at all
-    if (!self.Summarizer) {
+    const Summarizer = self.Summarizer || window.Summarizer;  // Fallback for context
+    if (!Summarizer) {
         return { success: false, error: "AI Summarizer API is not available on this browser." };
     }
-    const availability = await self.Summarizer.availability();
+    const availability = await Summarizer.availability();
     if (availability !== 'available') {
         return { success: false, error: `AI model is not ready. Status: ${availability}` };
     }
 
-    // B. Create the summarizer instance if it doesn't exist
+    // B. Check user activation (required for create())
+    if (navigator.userActivation && !navigator.userActivation.isActive) {
+        console.warn('[TubeTutor] No user gesture—prompting activation.');
+        // In extensions, you might dispatch a synthetic click or instruct user
+        return { success: false, error: "User interaction required (e.g., click to activate AI)." };
+    }
+
+    // C. Create the summarizer instance if it doesn't exist
     if (!summarizer) {
         console.log('[TubeTutor] Creating new Summarizer instance.');
-        summarizer = await self.Summarizer.create();
+        const options = {
+            type: 'key-points',
+            format: 'plain-text',
+            length: 'long',
+            monitor: (m) => {
+                m.addEventListener('downloadprogress', (e) => {
+                    console.log(`[TubeTutor] Model progress: ${Math.round(e.loaded * 100)}%`);
+                });
+            }
+        };
+        summarizer = await Summarizer.create(options);
+        console.log('[TubeTutor] Summarizer instance created successfully.');
     }
     
-    // C. Generate the summary
+    // D. Generate the summary
     try {
         console.log('[TubeTutor] Generating summary...');
         const summary = await summarizer.summarize(transcript, {
-            type: 'key-points',
-            format: 'plain-text',
-            length: 'long'
+            context: 'Extract key points from this video transcript as concise notes.'  // Optional guide
         });
-        console.log(`[TubeTutor] AI Summary: ${summary}`);
+        console.log(`[TubeTutor] Summary length: ${summary.length} chars`);
+        console.log('[TubeTutor] Summary preview:', summary.slice(0, 200) + '...');
         console.log('[TubeTutor] Summary generated successfully.');
-        summarizer.destroy();
         return { success: true, notes: summary };
     } catch (error) {
-        console.error('[TubeTutor] Summarizer API failed:', error);
-        return { success: false, error: "Failed to generate AI notes." };
+        console.error('[TubeTutor] Summarizer API failed:', error.name, error.message);
+        // Optional: Destroy on fatal error (but not needed per docs)
+        if (summarizer) {
+            summarizer = null;  // Reset for retry
+        }
+        return { success: false, error: `Failed to generate AI notes: ${error.message}` };
     }
 }
 

@@ -1,4 +1,4 @@
-<!-- File: src/svelte-app/NotesView.svelte -->
+<!-- File: src/NotesView.svelte -->
 <script>
   import { onMount } from 'svelte';
 
@@ -77,8 +77,6 @@ function formatNotes(text) {
     <p class="status-text">No notes could be generated for this video.</p>
   {/if}
 </div>
-
-<!-- File: src/svelte-app/NotesView.svelte -->
 
 <style>
   .view-container {

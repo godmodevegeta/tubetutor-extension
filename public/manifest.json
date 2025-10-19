@@ -7,7 +7,8 @@
   "permissions": [
      "storage",
      "scripting",
-     "cookies" 
+     "cookies",
+     "ai" 
   ],
   
   "host_permissions": [

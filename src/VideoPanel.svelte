@@ -4,48 +4,57 @@
   import NotesView from './NotesView.svelte';
   import QuizView from './QuizView.svelte';
   import ChatView from './ChatView.svelte';
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
 
   const urlParams = new URLSearchParams(window.location.search);
   const videoId = urlParams.get('videoId');
+  
+  // State for the main panel
   let activeView = 'Notes';
   const views = { Notes: NotesView, Quiz: QuizView, Chat: ChatView };
-
-  // This variable will hold our theme colors. It starts empty.
-  let themeStyles = '';
-
-  function handleMessage(event) {
-    // We don't check the origin because this script is in a sandboxed iframe.
-    const { type, source, payload } = event.data;
-    
-    if (source === 'tubetutor-content-script' && type === 'THEME_RESPONSE') {
-      console.log('[Iframe] Received theme from content script:', payload);
-      // Create a CSS string of variables from the received theme object
-      themeStyles = `
-        --panel-bg: ${payload.background};
-        --panel-text-primary: ${payload.primaryText};
-        --panel-text-secondary: ${payload.secondaryText};
-        --panel-header-border: ${payload.border};
-      `;
-    }
-  }
+  
+  // --- NEW: State for our fetched data ---
+  let transcript = null;
+  let transcriptError = '';
 
   onMount(() => {
-    // Listen for the response from our spy
-    window.addEventListener('message', handleMessage);
-
-    // Ask the content script spy for the theme colors
-    console.log('[Iframe] Requesting theme from content script...');
-    window.parent.postMessage({
-      type: 'REQUEST_THEME',
-      source: 'tubetutor-iframe'
-    }, 'https://www.youtube.com');
-  });
-
-  onDestroy(() => {
-    window.removeEventListener('message', handleMessage);
+    // Fetch the transcript as soon as the panel loads.
+    // This data will be passed down to all child components.
+    console.log('[VideoPanel] Mounting. Fetching transcript for', videoId);
+    chrome.runtime.sendMessage(
+      { type: 'GET_TRANSCRIPT', payload: { videoId } },
+      (response) => {
+        if (response?.success) {
+          transcript = response.transcript;
+          console.log('[VideoPanel] Transcript received.');
+        } else {
+          transcriptError = response?.error || 'Failed to load transcript.';
+          console.error('[VideoPanel] Transcript error:', transcriptError);
+        }
+      }
+    );
   });
 </script>
+
+<!-- --- NEW svelte:head BLOCK --- -->
+<!-- This injects styles into the <head> of our iframe's document,
+     allowing us to control the base styles for the entire app. -->
+<svelte:head>
+  <style>
+    body {
+      /* Apply our theme variables to the body itself */
+      background-color: var(--panel-bg);
+      color: var(--panel-text-primary);
+      font-family: "Roboto", "Arial", sans-serif;
+
+      /* A standard CSS reset for the body */
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</svelte:head>
+
+
 
 <div class="tubetutor-panel">
   <!-- 1. The Header -->
@@ -72,23 +81,42 @@
     <!-- This is the magic of Svelte. The <svelte:component> tag
          dynamically renders the component specified by 'views[activeView]'.
          When 'activeView' changes, this component automatically swaps. -->
-    <svelte:component this={views[activeView]} />
+    <svelte:component this={views[activeView]} {transcript} {transcriptError} />
   </div>
 
 </div>
 
-<!-- Note: The style section is now part of the component again.
-     The manual injection in injectVideoPanel.js will need to be updated. -->
 <style>
-  /* --- Main Panel Shell --- */
+  /* :global(:host) block with theme variables remains unchanged */
+  :global(:host) {
+    /* Light Mode */
+    --panel-bg: #ffffff;
+    --panel-border: rgba(0, 0, 0, 0.1);
+    --panel-text-primary: #0f0f0f;
+    --panel-text-secondary: #606060;
+    --panel-header-border: rgba(0, 0, 0, 0.1);
+    --panel-subtle-bg: #f2f2f2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :global(:host) {
+      /* Dark Mode */
+      --panel-bg: #212121;
+      --panel-border: rgba(255, 255, 255, 0.2);
+      --panel-text-primary: #ffffff;
+      --panel-text-secondary: #aaaaaa;
+      --panel-header-border: rgba(255, 255, 255, 0.2);
+      --panel-subtle-bg: #383838;
+    }
+  }
+
+  /* --- Main Panel Shell (MODIFIED) --- */
   .tubetutor-panel {
     display: flex;
     flex-direction: column;
-    height: 100%; /* Fill the full height of the iframe */
-    width: 100%; /* Fill the full width of the iframe */
-    background-color: transparent; /* <-- IMPORTANT CHANGE */
-    color: var(--panel-text-primary);
-    font-family: "Roboto", "Arial", sans-serif;
+    height: 100vh; /* Make the panel fill the entire iframe viewport height */
+    width: 100%;
+    /* The body now provides the background, so this can be transparent */
+    background-color: transparent;
   }
 
   /* --- Header --- */

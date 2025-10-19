@@ -1,6 +1,106 @@
-import { getSubtitles } from 'youtube-caption-extractor';
-
 console.log('TubeTutor Background Script Loaded!');
+// --- 1. UTILITY AND CACHING LOGIC ---
+
+// Helper to get cached data
+async function getFromCache(key, videoId) {
+    const cacheKey = `${key}_cache`;
+    const result = await chrome.storage.local.get(cacheKey);
+    const cache = result[cacheKey] || {};
+    const entry = cache[videoId];
+
+    if (entry && Date.now() < entry.expiry) {
+        return entry.data; // Return the data if it's not expired
+    }
+    return null; // Return null if not found or expired
+}
+
+// Helper to set cached data
+async function setInCache(key, videoId, data) {
+    const cacheKey = `${key}_cache`;
+    const result = await chrome.storage.local.get(cacheKey);
+    const cache = result[cacheKey] || {};
+    const expiry = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
+
+    cache[videoId] = { data, expiry };
+    await chrome.storage.local.set({ [cacheKey]: cache });
+}
+
+// --- 2. TRANSCRIPT FETCHER (NOW WITH CACHING) ---
+
+async function getTranscript(videoId) {
+    // First, try to get the transcript from cache
+    const cachedTranscript = await getFromCache('transcript', videoId);
+    if (cachedTranscript) {
+        console.log(`[TubeTutor] Transcript for ${videoId} found in cache.`);
+        return { success: true, transcript: cachedTranscript };
+    }
+
+    console.log(`[TubeTutor] Transcript for ${videoId} not in cache. Fetching from API.`);
+    const TACTIQ_API_URL = 'https://tactiq-apps-prod.tactiq.io/transcript';
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+    try {
+        const response = await fetch(TACTIQ_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ videoUrl, langCode: 'en' })
+        });
+        if (!response.ok) throw new Error(`API responded with status: ${response.status}`);
+        const data = await response.json();
+        if (!data.captions || data.captions.length === 0) {
+            throw new Error("API returned no captions.");
+        }
+        const fullText = data.captions.map(line => line.text).join(' ');
+        
+        // If fetch is successful, save to cache
+        await setInCache('transcript', videoId, fullText);
+        
+        return { success: true, transcript: fullText };
+    } catch (error) {
+        console.error(`[TubeTutor] Transcript fetch failed for ${videoId}:`, error);
+        return { success: false, error: "The transcript service is currently unavailable." };
+    }
+}
+
+
+// --- 3. NEW AI SUMMARIZER LOGIC ---
+
+// Store the summarizer instance to avoid re-creating it unnecessarily
+let summarizer = null;
+
+async function getSummaryNotes(transcript) {
+    // A. Check if the AI Summarizer is available at all
+    if (!self.Summarizer) {
+        return { success: false, error: "AI Summarizer API is not available on this browser." };
+    }
+    const availability = await self.Summarizer.availability();
+    if (availability !== 'available') {
+        return { success: false, error: `AI model is not ready. Status: ${availability}` };
+    }
+
+    // B. Create the summarizer instance if it doesn't exist
+    if (!summarizer) {
+        console.log('[TubeTutor] Creating new Summarizer instance.');
+        summarizer = await self.Summarizer.create();
+    }
+    
+    // C. Generate the summary
+    try {
+        console.log('[TubeTutor] Generating summary...');
+        const summary = await summarizer.summarize(transcript, {
+            type: 'key-points',
+            format: 'plain-text',
+            length: 'long'
+        });
+        console.log(`[TubeTutor] AI Summary: ${summary}`);
+        console.log('[TubeTutor] Summary generated successfully.');
+        summarizer.destroy();
+        return { success: true, notes: summary };
+    } catch (error) {
+        console.error('[TubeTutor] Summarizer API failed:', error);
+        return { success: false, error: "Failed to generate AI notes." };
+    }
+}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.group(`[TubeTutor] Message received: ${message.type}`);
@@ -70,67 +170,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Asynchronous response
   }
 
+  // --- REFACTORED 'GET_TRANSCRIPT' HANDLER ---
+  // This handler now just acts as a wrapper around our reusable function.
+  else if (message.type === 'GET_TRANSCRIPT') {
+      const { videoId } = message.payload;
+      getTranscript(videoId).then(sendResponse);
+      return true;
+  }
+  else if (message.type === 'GET_NOTES') {
+        const { videoId } = message.payload;
 
-// This is the new, refactored handler that calls the Tactiq API.
-else if (message.type === 'GET_TRANSCRIPT') {
-    const { videoId } = message.payload;
-
-    const callTactiqApi = async () => {
-        const TACTIQ_API_URL = 'https://tactiq-apps-prod.tactiq.io/transcript';
-        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-
-        try {
-            console.log(`[TubeTutor] Calling Tactiq API for video: ${videoUrl}`);
-
-            // Make a POST request to the API
-            const response = await fetch(TACTIQ_API_URL, {
-                method: 'POST',
-                headers: {
-                    // It's crucial to tell the server we're sending JSON data
-                    'Content-Type': 'application/json'
-                },
-                // The body must be a JSON string
-                body: JSON.stringify({
-                    videoUrl: videoUrl,
-                    langCode: 'en'
-                })
-            });
-
-            // Check if the network request itself was successful
-            if (!response.ok) {
-                throw new Error(`API responded with status: ${response.status}`);
+        (async () => {
+            // First, check if we have cached notes
+            const cachedNotes = await getFromCache('notes', videoId);
+            if (cachedNotes) {
+                console.log(`[TubeTutor] Notes for ${videoId} found in cache.`);
+                sendResponse({ success: true, notes: cachedNotes });
+                return;
             }
 
-            const data = await response.json();
-
-            // Check if the response contains the 'captions' array we expect
-            if (data.captions && data.captions.length > 0) {
-                // If it does, map over the array to get the 'text' from each line
-                // and join them all into a single string.
-                const fullText = data.captions.map(line => line.text).join(' ');
-                
-                console.log("[TubeTutor] Successfully fetched and processed transcript from Tactiq API.");
-                return { success: true, transcript: fullText };
-            } else {
-                // This handles cases where the API works but returns no captions
-                throw new Error("API returned a successful response but with no captions.");
+            // If no cached notes, get the transcript (from cache or fetch)
+            const transcriptResult = await getTranscript(videoId);
+            if (!transcriptResult.success) {
+                sendResponse(transcriptResult); // Pass the error along
+                return;
             }
 
-        } catch (error) {
-            console.error(`[TubeTutor] Tactiq API call failed:`, error);
-            // Return a generic error to the user
-            return { success: false, error: "The transcript service is currently unavailable." };
-        }
-    };
+            // Now, generate the summary from the transcript
+            const notesResult = await getSummaryNotes(transcriptResult.transcript);
+            if (notesResult.success) {
+                // If successful, cache the new notes
+                await setInCache('notes', videoId, notesResult.notes);
+            }
+            
+            sendResponse(notesResult);
+        })();
 
-    // The standard boilerplate to run our async function and send the response
-    console.group(`[TubeTutor] Message received: ${message.type}`);
-    callTactiqApi().then(response => {
-        sendResponse(response);
-        console.groupEnd();
-    });
-    
-    return true;
-}
+        return true; // Indicate we will respond asynchronously
+    }
   console.groupEnd();
 });

@@ -2,6 +2,15 @@
 
 console.log('[TubeTutor] Content script loaded!');
 
+// --- NEW TEARDOWN FUNCTION ---
+function unmountIframePanel() {
+  const iframePanel = document.getElementById('tubetutor-iframe-panel');
+  if (iframePanel) {
+    iframePanel.remove();
+    console.log('[TubeTutor] Unmounted stale iframe panel.');
+  }
+}
+
 // --- NEW IFRAME INJECTOR (Replaces handleVideoPage and injectSvelteAnchor) ---
 function injectIframePanel() {
   if (document.getElementById('tubetutor-iframe-panel')) return;
@@ -15,12 +24,23 @@ function injectIframePanel() {
     iframe.id = 'tubetutor-iframe-panel';
     iframe.src = chrome.runtime.getURL(`panel.html?videoId=${videoId}`);
 
-    // Style the iframe to be seamless and correctly positioned
-    iframe.style.border = 'none';
-    iframe.style.width = '402px';
-    iframe.style.height = '400px';
-    iframe.style.display = 'block'; // Ensures proper layout
-    iframe.style.marginBottom = '16px';
+    // --- NEW HIGH-FIDELITY STYLING FOR THE IFRAME ---
+    iframe.style.cssText = `
+      /* Box Model */
+      display: block;
+      width: 100%; /* Take up the full width of the parent column */
+      height: 400px;
+      margin-bottom: 16px; /* Space between our panel and the playlist */
+
+      /* Borders & Appearance */
+      border-radius: 12px;
+      border: 1px solid var(--yt-spec-10-percent-layer);
+      background-color: var(--yt-spec-brand-background-solid);
+
+      /* No internal scrollbars on the iframe itself */
+      overflow: hidden;
+    `;
+
 
     playlistElement.parentElement.insertBefore(iframe, playlistElement);
     console.log('[TubeTutor] Injected iframe panel for video:', videoId);
@@ -117,6 +137,10 @@ function createAndAppendButton(targetContainer, playlistId, isAlreadyEnrolled) {
 
 // --- UPDATED 'run' FUNCTION ---
 function run() {
+    // 1. TEARDOWN FIRST: Always attempt to remove the old panel on any navigation.
+  unmountIframePanel();
+
+    // 2. SETUP SECOND: Decide whether to build a new panel for the current page.
   const url = window.location.href;
   if (url.includes('/playlist?list=')) {
     // Playlist page logic is untouched.
@@ -152,3 +176,35 @@ new MutationObserver(() => {
 
 setTimeout(run, 1000);
 
+// This is our new Theme Relay. It listens for requests from the iframe.
+window.addEventListener('message', (event) => {
+  // Security: Only accept messages from our own iframe
+  if (event.source !== document.getElementById('tubetutor-iframe-panel')?.contentWindow) {
+    return;
+  }
+
+  const { type, source } = event.data;
+
+  // If the iframe is ready and asking for the theme...
+  if (source === 'tubetutor-iframe' && type === 'REQUEST_THEME') {
+    console.log('[Content Script] Iframe is requesting theme. Spying on host page...');
+
+    // Get the computed styles from the main YouTube page body
+    const bodyStyles = window.getComputedStyle(document.body);
+
+    // Extract the specific colors we need
+    const theme = {
+      background: bodyStyles.getPropertyValue('--yt-spec-brand-background-solid').trim(),
+      primaryText: bodyStyles.getPropertyValue('--yt-spec-text-primary').trim(),
+      secondaryText: bodyStyles.getPropertyValue('--yt-spec-text-secondary').trim(),
+      border: bodyStyles.getPropertyValue('--yt-spec-10-percent-layer').trim(),
+    };
+    
+    // Send the theme object back to the iframe
+    event.source.postMessage({
+      type: 'THEME_RESPONSE',
+      source: 'tubetutor-content-script',
+      payload: theme
+    }, '*');
+  }
+});

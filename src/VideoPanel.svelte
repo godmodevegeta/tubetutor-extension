@@ -4,17 +4,47 @@
   import NotesView from './NotesView.svelte';
   import QuizView from './QuizView.svelte';
   import ChatView from './ChatView.svelte';
+  import { onMount, onDestroy } from 'svelte';
 
-  // This script runs inside the iframe, which has access to chrome.* APIs.
-  // We can get the videoId from the iframe's own URL query parameters.
   const urlParams = new URLSearchParams(window.location.search);
   const videoId = urlParams.get('videoId');
-
   let activeView = 'Notes';
   const views = { Notes: NotesView, Quiz: QuizView, Chat: ChatView };
 
-  // Note: We can add transcript fetching logic back here later,
-  // calling chrome.runtime.sendMessage directly. It will work flawlessly.
+  // This variable will hold our theme colors. It starts empty.
+  let themeStyles = '';
+
+  function handleMessage(event) {
+    // We don't check the origin because this script is in a sandboxed iframe.
+    const { type, source, payload } = event.data;
+    
+    if (source === 'tubetutor-content-script' && type === 'THEME_RESPONSE') {
+      console.log('[Iframe] Received theme from content script:', payload);
+      // Create a CSS string of variables from the received theme object
+      themeStyles = `
+        --panel-bg: ${payload.background};
+        --panel-text-primary: ${payload.primaryText};
+        --panel-text-secondary: ${payload.secondaryText};
+        --panel-header-border: ${payload.border};
+      `;
+    }
+  }
+
+  onMount(() => {
+    // Listen for the response from our spy
+    window.addEventListener('message', handleMessage);
+
+    // Ask the content script spy for the theme colors
+    console.log('[Iframe] Requesting theme from content script...');
+    window.parent.postMessage({
+      type: 'REQUEST_THEME',
+      source: 'tubetutor-iframe'
+    }, 'https://www.youtube.com');
+  });
+
+  onDestroy(() => {
+    window.removeEventListener('message', handleMessage);
+  });
 </script>
 
 <div class="tubetutor-panel">
@@ -54,9 +84,11 @@
   .tubetutor-panel {
     display: flex;
     flex-direction: column;
-    /* We are removing fixed height to allow the content to determine the size */
-    min-height: 400px;
-    width: 402px;
+    height: 100%; /* Fill the full height of the iframe */
+    width: 100%; /* Fill the full width of the iframe */
+    background-color: transparent; /* <-- IMPORTANT CHANGE */
+    color: var(--panel-text-primary);
+    font-family: "Roboto", "Arial", sans-serif;
   }
 
   /* --- Header --- */

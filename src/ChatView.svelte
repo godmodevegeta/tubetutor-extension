@@ -7,6 +7,7 @@
   // export let transcriptError;
 
   const videoId = new URLSearchParams(window.location.search).get('videoId');
+  const CACHE_KEY = `chat_history_${videoId}`; // A clear, unique key for our cache
 
   // State Management
   let state = 'initializing'; // 'initializing' | 'ready' | 'processing'
@@ -19,85 +20,111 @@
     content: `Hi, I'm TubeTutor, your personal AI tutor. Please ask me anything about the concepts in this video!`
   };
 
-  // --- LIFECYCLE & DATA HANDLING ---
+  // --- LIFECYCLE & DATA HANDLING (CORRECTED) ---
   onMount(async () => {
-    // 1. Load chat from cache
-    const cachedHistory = await getFromCache(`chat_${videoId}`);
-    if (cachedHistory && cachedHistory.length > 0) {
-      chatHistory = cachedHistory;
+    // 1. ALWAYS load from cache first on mount.
+    const cached = await getFromCache(CACHE_KEY);
+    if (cached) {
+      console.log('[ChatView] Found existing chat in cache. Loading.');
+      chatHistory = cached;
     } else {
+      console.log('[ChatView] No chat in cache. Initializing with welcome message.');
       chatHistory = [initialMessage];
     }
     state = 'ready';
 
-    // 2. Listen for streamed chunks from background.js
+    // 2. Add the listener for background messages (unchanged)
     chrome.runtime.onMessage.addListener(handleBackgroundMessage);
   });
   
   onDestroy(() => {
+    // Unchanged
     chrome.runtime.onMessage.removeListener(handleBackgroundMessage);
   });
 
   afterUpdate(() => {
-    // Auto-scroll to the bottom when new messages are added
+    // Unchanged
     if (chatContainer) {
       chatContainer.scrollTop = chatContainer.scrollHeight;
     }
   });
 
-  // --- COMMUNICATION ---
+  // --- COMMUNICATION (handleBackgroundMessage is unchanged) ---
   function handleBackgroundMessage(message) {
-    if (message.payload.videoId !== videoId) return; // Ignore messages for other videos
+    if (message.payload.videoId !== videoId) return;
 
     switch (message.type) {
       case 'CHAT_CHUNK':
-        // Append the new chunk to the last message in the history
         chatHistory[chatHistory.length - 1].content += message.payload.chunk;
-        chatHistory = chatHistory; // Trigger Svelte reactivity
+        chatHistory = chatHistory;
         break;
       case 'CHAT_COMPLETE':
         state = 'ready';
-        saveChatToCache();
+        saveChatToCache(); // Persist the full history after AI is done
         break;
       case 'CHAT_ERROR':
         chatHistory[chatHistory.length - 1].content += `\n\n<strong style="color: #ff4d4d;">Error: ${message.payload.error}</strong>`;
         state = 'ready';
+        saveChatToCache(); // Persist even if there's an error
         break;
     }
   }
 
-  function handleSend() {
+  // --- USER ACTIONS (handleSend and handleClearChat are now cache-aware) ---
+  async function handleSend() {
     if (userInput.trim() === '' || state === 'processing') return;
 
-    // 1. Update UI immediately
     const newUserMessage = { role: 'user', content: userInput };
-    chatHistory = [...chatHistory, newUserMessage, { role: 'assistant', content: '' }]; // Add user msg and empty assistant msg
+    chatHistory = [...chatHistory, newUserMessage, { role: 'assistant', content: '' }];
+    
+    // Save to cache immediately after the user sends their message
+    await saveChatToCache();
+
     userInput = '';
     state = 'processing';
 
-    // 2. Send to background for processing
     chrome.runtime.sendMessage({
       type: 'CHAT_PROMPT',
-      payload: { videoId, transcript, history: chatHistory.slice(0, -1) } // Send history *before* the empty assistant message
+      payload: { videoId, transcript, history: chatHistory.slice(0, -1) }
     });
   }
   
-  function handleClearChat() {
+  async function handleClearChat() {
     state = 'initializing';
+    // Tell the background to destroy the session
     chrome.runtime.sendMessage({ type: 'CLEAR_CHAT', payload: { videoId } });
-    chrome.storage.local.remove(`chat_${videoId}_cache`);
+    
+    // Clear the cache from storage
+    await chrome.storage.local.remove(CACHE_KEY);
+    
+    // Reset the UI state
     chatHistory = [initialMessage];
+    
+    // Save the new "initial" state to the cache
+    await saveChatToCache();
+
     state = 'ready';
+    console.log('[ChatView] Chat cleared and cache reset.');
   }
 
-  // --- CACHING ---
+  // --- CACHING HELPERS (CORRECTED) ---
   async function getFromCache(key) {
-    const result = await chrome.storage.local.get(key);
-    return result[key];
+    const result = await chrome.storage.local.get([key, `${key}_expiry`]);
+    const expiry = result[`${key}_expiry`];
+    // Check if data exists AND if it has not expired
+    if (result[key] && Date.now() < expiry) {
+      return result[key];
+    }
+    return null; // Return null if expired or not found
   }
+
   async function saveChatToCache() {
-    const expiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
-    await chrome.storage.local.set({ [`chat_${videoId}_cache`]: chatHistory, [`chat_${videoId}_expiry`]: expiry });
+    const expiry = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7-day TTL
+    await chrome.storage.local.set({
+      [CACHE_KEY]: chatHistory,
+      [`${CACHE_KEY}_expiry`]: expiry
+    });
+    console.log('[ChatView] Chat history saved to cache.');
   }
 </script>
 

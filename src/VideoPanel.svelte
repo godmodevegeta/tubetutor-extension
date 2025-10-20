@@ -10,8 +10,8 @@
   const videoId = urlParams.get('videoId');
   
   // State for the main panel
-  let activeView = 'Notes';
-  const views = { Notes: NotesView, Quiz: QuizView, Chat: ChatView };
+  let activeView = 'Summary';
+  const views = { Summary: NotesView, Quiz: QuizView, Chat: ChatView };
   
   // --- NEW: State for our fetched data ---
   let transcript = null;

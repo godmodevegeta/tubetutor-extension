@@ -127,9 +127,73 @@ async function getSummaryNotes(transcript) {
     }
 }
 
+// --- 4. AI PROMPT ENGINEERING FOR QUIZ---
+
+// Store the AI session to avoid re-creating it on every call.
+let quizSession = null;
+
+// Define the precise JSON schema we want the AI to return.
+const quizSchema = {
+  type: 'object',
+  properties: {
+    questions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          question: { type: 'string' },
+          options: { type: 'array', items: { type: 'string' }, minItems: 4, maxItems: 4 },
+          correctAnswerIndex: { type: 'number', minimum: 0, maximum: 3 }
+        },
+        required: ['question', 'options', 'correctAnswerIndex']
+      }
+    }
+  },
+  required: ['questions']
+};
+
+// This is the core function for generating the quiz.
+async function generateQuizFromTranscript(transcript, questionCount = 10) {
+    if (!self.LanguageModel) {
+        return { success: false, error: "AI Prompt API is not available." };
+    }
+    const availability = await self.LanguageModel.availability();
+    if (availability !== 'available') {
+        return { success: false, error: `AI model is not ready: ${availability}` };
+    }
+    if (!quizSession) {
+        console.log('[TubeTutor] Creating new LanguageModel session for quizzes.');
+        quizSession = await self.LanguageModel.create();
+    }
+    
+    // The carefully engineered prompt.
+    const prompt = `Based on the following transcript, generate a challenging, high-quality multiple-choice quiz with exactly ${questionCount} questions to test a viewer's understanding. Each question must have exactly 4 options.
+
+    Transcript:
+    """
+    ${transcript}
+    """`;
+
+    try {
+        console.log('[TubeTutor] Prompting AI to generate quiz...');
+        const result = await quizSession.prompt(prompt, {
+            responseConstraint: { schema: quizSchema }
+        });
+        const parsedResult = JSON.parse(result);
+        console.log('[TubeTutor] AI Quiz generated and parsed successfully.');
+        return { success: true, quiz: parsedResult };
+    } catch (error) {
+        console.error('[TubeTutor] Prompt API failed for quiz generation:', error);
+        return { success: false, error: 'Failed to generate AI quiz.' };
+    }
+}
+
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.group(`[TubeTutor] Message received: ${message.type}`);
   console.log('Payload:', message.payload);
+  // Store active chat sessions, keyed by videoId
+    const chatSessions = {};
 
   // --- HANDLER 1: FOR ENROLLING A NEW COURSE ---
   if (message.type === 'ENROLL_COURSE') {
@@ -233,5 +297,94 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         return true; // Indicate we will respond asynchronously
     }
+    else if (message.type === 'GET_QUIZ') {
+    const { videoId, forceNew = false } = message.payload;
+
+    (async () => {
+        // Handle "Retry" logic: if forceNew is true, skip the cache check.
+        if (!forceNew) {
+            const cachedQuiz = await getFromCache('quiz', videoId);
+            if (cachedQuiz) {
+                console.log(`[TubeTutor] Quiz for ${videoId} found in cache.`);
+                sendResponse({ success: true, quiz: cachedQuiz });
+                return;
+            }
+        }
+
+        // Get the transcript (from cache or API)
+        const transcriptResult = await getTranscript(videoId);
+        if (!transcriptResult.success) {
+            sendResponse(transcriptResult); // Pass transcript error
+            return;
+        }
+
+        // Generate the quiz from the transcript
+        const quizResult = await generateQuizFromTranscript(transcriptResult.transcript);
+        if (quizResult.success) {
+            // If successful, cache the newly generated quiz
+            await setInCache('quiz', videoId, quizResult.quiz);
+        }
+        
+        sendResponse(quizResult);
+    })();
+
+    return true; // Asynchronous response
+    }  
+    else if (message.type === 'CHAT_PROMPT') {
+        const { videoId, transcript, history } = message.payload;
+
+        (async () => {
+            try {
+                // A. Create a session if it doesn't exist for this video
+                if (!chatSessions[videoId]) {
+                    if (!self.LanguageModel) throw new Error("AI not available.");
+                    const availability = await self.LanguageModel.availability();
+                    if (availability !== 'available') throw new Error(`AI model not ready: ${availability}`);
+
+                    console.log(`[TubeTutor] Creating new chat session for ${videoId}`);
+                    
+                    // Use initialPrompts to set the context and history
+                    const initialPrompts = [
+                        { role: 'system', content: `You are TubeTutor, a friendly and knowledgeable AI assistant. Your purpose is to answer questions based ONLY on the provided video transcript. Do not use any external knowledge. Be concise and helpful. The transcript is:\n"""\n${transcript}\n"""` },
+                        ...history // Spread the existing chat history
+                    ];
+
+                    chatSessions[videoId] = await self.LanguageModel.create({ initialPrompts });
+                }
+
+                // B. Get the last user message from the history
+                const userPrompt = history[history.length - 1].content;
+
+                // C. Use promptStreaming for a better UX
+                const stream = chatSessions[videoId].promptStreaming(userPrompt);
+
+                // D. Stream the response back to the front-end
+                for await (const chunk of stream) {
+                    chrome.runtime.sendMessage({
+                        type: 'CHAT_CHUNK',
+                        payload: { videoId, chunk }
+                    });
+                }
+                // Send a final message to indicate the stream is complete
+                chrome.runtime.sendMessage({ type: 'CHAT_COMPLETE', payload: { videoId } });
+
+            } catch (error) {
+                console.error('[TubeTutor] Chat prompt failed:', error);
+                chrome.runtime.sendMessage({ type: 'CHAT_ERROR', payload: { videoId, error: error.message } });
+            }
+        })();
+        // Note: We don't use sendResponse here because we're sending multiple messages back
+        return true; 
+    }
+    else if (message.type === 'CLEAR_CHAT') {
+        const { videoId } = message.payload;
+        if (chatSessions[videoId]) {
+            chatSessions[videoId].destroy();
+            delete chatSessions[videoId];
+            console.log(`[TubeTutor] Chat session for ${videoId} destroyed.`);
+        }
+        // No response needed, this is a fire-and-forget action
+    }
+    
   console.groupEnd();
 });

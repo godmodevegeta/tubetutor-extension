@@ -59,6 +59,8 @@
         chatHistory = chatHistory;
         break;
       case 'CHAT_COMPLETE':
+        // When the stream is finished, trim the final, complete message.
+        chatHistory[chatHistory.length - 1].content = chatHistory[chatHistory.length - 1].content.trim();
         state = 'ready';
         saveChatToCache(); // Persist the full history after AI is done
         break;

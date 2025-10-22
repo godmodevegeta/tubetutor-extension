@@ -397,7 +397,7 @@ class QuizGeneratorService {
    */
   static buildPrompt(transcript, questionCount) {
     return `Based on the following transcript, generate a challenging, high-quality multiple-choice quiz with exactly ${questionCount} questions to test a viewer's understanding. Each question must have exactly 4 options.
-
+Important: In the questions and options, never mention or reference the "transcript"—always refer to "the video" instead (e.g., instead of "as described in the transcript," say "as shown in the video").
 Transcript:
 """
 ${transcript}

@@ -59,7 +59,7 @@
         --panel-text-primary: #ffffff;
         --panel-text-secondary: #aaaaaa;
         --panel-header-border: rgba(255, 255, 255, 0.2);
-        --panel-subtle-bg: #383838;
+        --panel-subtle-bg: #181818;
       }
     }
 

@@ -118,8 +118,8 @@
       :root {
         --panel-bg: #0D0D0D;
         --panel-border: #323C59;
-        --panel-text-primary: #A0F2B4;
-        --panel-text-secondary: #91D9A3;
+        --panel-text-primary: #F2F2F2;
+        --panel-text-secondary: #EFF2F2;
         --panel-header-border: #323C59;
         --panel-subtle-bg: #1B1A40;
         --panel-accent: #A0F2B4;

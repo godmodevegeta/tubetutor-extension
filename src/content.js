@@ -14,7 +14,7 @@ function unmountIframePanel() {
   if (playerResizeObserver) {
     playerResizeObserver.disconnect();
     playerResizeObserver = null;
-    log('[TubeTutor] Disconnected player resize observer.');
+    console.log('[TubeTutor] Disconnected player resize observer.');
   }
 }
 
@@ -64,7 +64,6 @@ function injectIframePanel() {
     
     // Perform the initial sync
     syncHeight();
-
 
     playlistElement.parentElement.insertBefore(iframe, playlistElement);
     console.log('[TubeTutor] Injected iframe panel for video:', videoId);

@@ -1,79 +1,62 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+/* File: src/svelte-app/app.css (Definitive Version) */
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+/* 1. Global Reset & Transparency */
+html, body {
+  /* This is the key to the rounded corner illusion */
+  background-color: transparent;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
+  /* Reset browser defaults */
   margin: 0;
+  padding: 0;
+  font-family: "Roboto", "Arial", sans-serif;
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+/* 2. This is the new, critical part. We style the 'main' element GLOBALLY. */
+/*    This is the root element of our App.svelte component. */
+main {
+  /* Shape & Size */
+  width: 380px;
+  min-height: 200px;
+  max-height: 500px;
+  
+  /* Layout */
   display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  flex-direction: column;
+  
+  /* The "Window Illusion" styles, now with higher priority */
+  border-radius: 12px;
+  overflow: hidden;
+  
+  /* We must use hardcoded fallbacks here, as we can't access Svelte's variables.
+     These are the standard light and dark mode colors. */
+  background-color: #ffffff; /* Light mode bg */
+  color: #0f0f0f;         /* Light mode text */
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-.card {
-  padding: 2em;
-}
-
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* 3. Dark Mode overrides for the main element */
+@media (prefers-color-scheme: dark) {
+  main {
+    background-color: #212121; /* Dark mode bg */
+    color: #ffffff;         /* Dark mode text */
   }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+}
+
+/* 4. Consistent Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #aaaaaa;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ffffff;
 }

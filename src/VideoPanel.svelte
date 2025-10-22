@@ -77,7 +77,8 @@
 <div class="tubetutor-panel">
   <!-- 1. The Header -->
   <div class="panel-header">
-    <h2 class="header-title">TubeTutor</h2>
+    <img src="/images/icon128.png" alt="I'm Maddie" class="panel-icon" />
+    <h2 class="header-title">Maddie: Your Personal AI Tutor</h2>
   </div>
 
   <!-- 2. The Tab Navigation Bar -->
@@ -120,12 +121,20 @@
   .panel-header {
     display: flex;
     align-items: center;
+    gap: 12px; 
     padding: 0 16px;
     height: 48px;
     border-bottom: 1px solid var(--panel-header-border);
     flex-shrink: 0;
   }
+  .panel-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    flex-shrink: 0; /* Prevents icon from shrinking */
+  }
   .header-title {
+    font-family: "Roboto", "Arial", sans-serif;
     font-size: 18px;
     font-weight: 500;
     margin: 0;

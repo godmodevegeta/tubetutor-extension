@@ -17,7 +17,7 @@
 
   const initialMessage = {
     role: 'assistant',
-    content: `Hi, I'm TubeTutor, your personal AI tutor. Please ask me anything about the concepts in this video!`
+    content: `Hi, I'm Maddie, your personal AI tutor. Please ask me anything about the concepts in this video!`
   };
 
   // --- LIFECYCLE & DATA HANDLING (CORRECTED) ---
@@ -211,7 +211,7 @@
   .footer {
     padding: 8px 16px;
     border-top: 1px solid var(--panel-header-border);
-    text-align: right;
+    text-align: center;
   }
   .clear-button {
     font-size: 12px;

@@ -119,11 +119,50 @@ function createAndAppendButton(targetContainer, playlistId, isAlreadyEnrolled) {
         });
         enrollButton.addEventListener('click', () => {
             console.log('[TubeTutor] Enroll button clicked!');
-            const playlistTitle = document.querySelector('#title .yt-formatted-string')?.textContent || 'Untitled Playlist';
+            // 1. Scrape the main title from the H1 tag for stability.
+            const titleElement = document.querySelector('h1#title .yt-formatted-string');
+            const playlistTitle = titleElement ? titleElement.textContent.trim() : 'Untitled Playlist';
+
+            let creatorName = '';
+
+            // 1. Primary Attempt: Use the aria-label from the avatar stack.
+            const avatarStackElement = document.querySelector('yt-avatar-stack-view-model[aria-label]');
+            if (avatarStackElement) {
+                const ariaLabel = avatarStackElement.getAttribute('aria-label');
+                // Clean the text: "by WilliamFiset" -> "WilliamFiset"
+                if (ariaLabel) {
+                    creatorName = ariaLabel.trim().replace(/^by\s/i, '');
+                }
+            }
+
+            // 2. Secondary (Fallback) Attempt: If the primary fails, try the simple link.
+            if (!creatorName) {
+                const ownerLinkElement = document.querySelector('#owner-text a');
+                if (ownerLinkElement) {
+                    creatorName = ownerLinkElement.textContent.trim();
+                }
+            }
+            const fullTitle = creatorName ? `${playlistTitle} by ${creatorName}` : playlistTitle;
+            console.log(`[TubeTutor] Fulltitle: ${fullTitle}`);
             const videos = scrapePlaylistData();
+            const thumbnailElement = document.querySelector('.yt-page-header-view-model__page-header-headline-image-hero-container img');
+            console.log('[TubeTutor] Thumbnail element:', thumbnailElement);
+            const thumbnailUrl = thumbnailElement ? thumbnailElement.src : '';
+            if (!thumbnailUrl) {
+                console.warn('[TubeTutor] Could not find playlist thumbnail image.');
+            }
+            console.log(`[TubeTutor] thumbnail URL: ${thumbnailUrl}`);
+            const url = window.location.href;
+            console.log(`[TubeTutor] playlist URL: ${url}`)
             chrome.runtime.sendMessage({
                 type: 'ENROLL_COURSE',
-                payload: { playlistId, title: playlistTitle, videos: videos }
+                payload: { 
+                  playlistId, 
+                  title: fullTitle, 
+                  videos: videos,  
+                  thumbnailUrl: thumbnailUrl,
+                  url: url
+                }
             });
             enrollButton.innerText = 'Enrolled';
             enrollButton.disabled = true;

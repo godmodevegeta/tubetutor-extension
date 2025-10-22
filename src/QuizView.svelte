@@ -62,6 +62,7 @@
   {:else if state === 'generating'}
     <div class="status-view">
       <p>Generating your personalized quiz with on-device AI...</p>
+      <p>May take upto 2-3 minutes</p>
       <!-- You could add a CSS spinner here -->
     </div>
 

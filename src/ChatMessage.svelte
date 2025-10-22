@@ -5,7 +5,7 @@
 </script>
 
 <div class="message" class:user={role === 'user'} class:assistant={role === 'assistant'}>
-  <strong class="role">{role === 'user' ? 'You' : 'TubeTutor'}:</strong>
+  <strong class="role">{role === 'user' ? 'You' : 'Maddie'}:</strong>
   <div class="content">{@html content}</div>
 </div>
 

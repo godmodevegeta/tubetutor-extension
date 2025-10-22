@@ -17,7 +17,7 @@
 
   const initialMessage = {
     role: 'assistant',
-    content: `Hi, I'm Maddie, your personal AI tutor. Please ask me anything about the concepts in this video!`
+    content: `Hey there, again XD! I'm your personal AI tutor, Maddie. Please ask me anything about the concepts in this video!`
   };
 
   // --- LIFECYCLE & DATA HANDLING (CORRECTED) ---

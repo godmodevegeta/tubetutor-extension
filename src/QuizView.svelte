@@ -107,7 +107,7 @@
     cursor: pointer;
   }
   .footer {
-    padding: 16px;
+    padding: 10px;
     border-top: 1px solid var(--panel-header-border);
     display: flex;
     justify-content: space-between;

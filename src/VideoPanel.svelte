@@ -78,7 +78,7 @@
   <!-- 1. The Header -->
   <div class="panel-header">
     <img src="/images/icon128.png" alt="I'm Maddie" class="panel-icon" />
-    <h2 class="header-title">Maddie: Your Personal AI Tutor</h2>
+    <h2 class="header-title">Hey there! I'm Maddie</h2>
   </div>
 
   <!-- 2. The Tab Navigation Bar -->
@@ -128,8 +128,8 @@
     flex-shrink: 0;
   }
   .panel-icon {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     border-radius: 6px;
     flex-shrink: 0; /* Prevents icon from shrinking */
   }

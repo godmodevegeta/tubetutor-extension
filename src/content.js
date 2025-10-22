@@ -1,6 +1,7 @@
 // File: content.js (The Refactored Version)
 
 console.log('[TubeTutor] Content script loaded!');
+let playerResizeObserver = null;
 
 // --- NEW TEARDOWN FUNCTION ---
 function unmountIframePanel() {
@@ -9,6 +10,12 @@ function unmountIframePanel() {
     iframePanel.remove();
     console.log('[TubeTutor] Unmounted stale iframe panel.');
   }
+  // CRITICAL: Disconnect the observer to prevent memory leaks
+  if (playerResizeObserver) {
+    playerResizeObserver.disconnect();
+    playerResizeObserver = null;
+    log('[TubeTutor] Disconnected player resize observer.');
+  }
 }
 
 // --- NEW IFRAME INJECTOR (Replaces handleVideoPage and injectSvelteAnchor) ---
@@ -16,6 +23,8 @@ function injectIframePanel() {
   if (document.getElementById('tubetutor-iframe-panel')) return;
 
   const playlistElement = document.querySelector('ytd-playlist-panel-renderer#playlist');
+  const playerElement = document.querySelector('ytd-player'); // The main video player
+
   
   if (playlistElement) {
     const videoId = new URLSearchParams(window.location.search).get('v');
@@ -29,7 +38,7 @@ function injectIframePanel() {
       /* Box Model */
       display: block;
       width: 100%; /* Take up the full width of the parent column */
-      height: 400px;
+      // height: 450px;
       margin-bottom: 16px; /* Space between our panel and the playlist */
 
       /* Borders & Appearance */
@@ -40,6 +49,21 @@ function injectIframePanel() {
       /* No internal scrollbars on the iframe itself */
       overflow: hidden;
     `;
+
+    // The function that syncs the height
+    const syncHeight = () => {
+      const playerHeight = playerElement.getBoundingClientRect().height;
+      if (playerHeight > 0) {
+        iframe.style.height = `${playerHeight}px`;
+      }
+    };
+    
+    // Create and start the observer
+    playerResizeObserver = new ResizeObserver(syncHeight);
+    playerResizeObserver.observe(playerElement);
+    
+    // Perform the initial sync
+    syncHeight();
 
 
     playlistElement.parentElement.insertBefore(iframe, playlistElement);

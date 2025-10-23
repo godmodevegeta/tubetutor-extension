@@ -65,7 +65,7 @@ function formatNotes(text) {
 
 <div class="view-container">
   {#if isLoading}
-    <p class="status-text">Generating mindful notes with on-device AI...</p>
+    <p class="status-text">Generating mindful key-points with on-device AI...</p>
   {:else if errorMessage}
     <p class="status-text error">{errorMessage}</p>
   {:else if notes}

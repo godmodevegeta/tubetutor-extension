@@ -422,23 +422,35 @@ ${transcript}
       const prompt = this.buildPrompt(transcript, questionCount);
 
       log('Prompting AI to generate quiz...');
-      
+
       const result = await session.prompt(prompt, {
         responseConstraint: { schema: this.QUIZ_SCHEMA }
       });
 
-      const parsedResult = JSON.parse(result);
-      // Before returning success, we MUST validate the structure.
-      if (parsedResult && Array.isArray(parsedResult.questions)) {
-          log('AI Quiz generated and validated successfully.');
-          // Only return success if the structure is correct.
-          return createSuccessResponse({ quiz: parsedResult });
-      } else {
-          // If the structure is wrong, treat it as a failure.
-          logError('AI returned a malformed quiz object:', parsedResult);
-          throw new Error('AI failed to generate a valid quiz structure.');
+      let parsedResult;
+      try {
+        parsedResult = JSON.parse(result);
+      } catch (e) {
+        logError('AI returned non-JSON output:', result);
+        throw new Error('AI returned invalid JSON.');
       }
 
+      // 🧩 Flexibly normalize shape
+      if (Array.isArray(parsedResult)) {
+        log('AI returned a raw array — wrapping into { questions: [...] }');
+        parsedResult = { questions: parsedResult };
+      }
+
+      // ✅ Validate shape
+      if (parsedResult?.questions && Array.isArray(parsedResult.questions)) {
+        log('AI Quiz generated and validated successfully.');
+        return createSuccessResponse({ quiz: parsedResult });
+      }
+
+      // ❌ Anything else = structural failure
+      logError('AI returned a malformed quiz object:', parsedResult);
+      throw new Error('AI failed to generate a valid quiz structure.');
+      
     } catch (error) {
       logError('Prompt API failed for quiz generation:', error);
       return createErrorResponse('Failed to generate AI quiz.');

@@ -13,39 +13,101 @@
   let score = 0;
   let errorMessage = '';
 
+  // Load saved state when component mounts
+  onMount(() => {
+    chrome.storage.local.get(videoId, (res) => {
+      const saved = res[videoId];
+      if (saved && saved.state) {
+        console.log('[QuizView] Restoring saved state:', saved.state);
+        state = saved.state;
+        quiz = saved.quiz || null;
+        userAnswers = saved.userAnswers || [];
+        score = saved.score || 0;
+        errorMessage = '';
+      }
+    });
+
+    // Listen for async background updates (AI generation complete)
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes[videoId]) {
+        const newData = changes[videoId].newValue;
+        if (!newData) return;
+        console.log('[QuizView] Storage updated → syncing UI state:', newData.state);
+        state = newData.state || state;
+        quiz = newData.quiz || quiz;
+        userAnswers = newData.userAnswers || userAnswers;
+        score = newData.score || score;
+      }
+    });
+  });
+
+
   function generateQuiz(forceNew = false) {
+    if (state === 'generating') return; // prevent parallel requests
     state = 'generating';
     errorMessage = '';
     console.log(`[QuizView] Requesting AI quiz. Force new: ${forceNew}`);
+    // Persist spinner state immediately
+    chrome.storage.local.set({
+      [videoId]: { state: 'generating' }
+    });
     
+    let timer = setTimeout(() => {
+      if (state === 'generating') {
+        errorMessage = "Quiz generation timed out.";
+        state = 'idle';
+        chrome.storage.local.set({ [videoId]: { state } });
+      }
+    }, 40000);
     chrome.runtime.sendMessage(
       { type: 'GET_QUIZ', payload: { videoId, forceNew } },
       (response) => {
-        if (response?.success) {
+        clearTimeout(timer);
+        if (chrome.runtime.lastError) {
+          errorMessage = chrome.runtime.lastError.message;
+          state = 'idle';
+          chrome.storage.local.set({ [videoId]: { state, errorMessage } });
+
+          return;
+        }
+        if (response?.success && response.quiz && Array.isArray(response.quiz.questions)) {
           quiz = response.quiz;
+          console.log('[QuizView] Received valid quiz data:', quiz);
           userAnswers = new Array(quiz.questions.length).fill(null);
           state = 'answering';
+          // Save quiz to persistent storage
+          chrome.storage.local.set({
+            [videoId]: { state, quiz, userAnswers }
+          });
         } else {
-          errorMessage = response?.error || "An unknown error occurred.";
-          state = 'idle'; // Go back to idle on failure
+          // If the data is malformed for any reason, we fail gracefully.
+          errorMessage = response?.error || "Failed to load a valid quiz.";
+          console.log('[QuizView] Received invalid quiz response:', response);
+          state = 'idle'; // Go back to the safe 'idle' state.
+          chrome.storage.local.set({ [videoId]: { state, errorMessage } });
         }
       }
     );
   }
 
   function handleSubmit() {
+    if (!quiz?.questions?.length) return;
     let correctCount = 0;
     for (let i = 0; i < quiz.questions.length; i++) {
       if (userAnswers[i] === quiz.questions[i].correctAnswerIndex) {
         correctCount++;
       }
     }
-    score = (correctCount / quiz.questions.length) * 100;
+    score = Math.round((correctCount / quiz.questions.length) * 100);
     state = 'graded';
+    // Persist graded state & score
+    chrome.storage.local.set({
+      [videoId]: { state, quiz, userAnswers, score }
+    });
   }
   
   function handleRetry() {
-    generateQuiz(true); // 'true' tells the background to fetch a new quiz
+    chrome.storage.local.remove(videoId, () => generateQuiz(true));
   }
 </script>
 
@@ -63,7 +125,7 @@
     <div class="status-view">
       <p>Generating your personalized quiz with on-device AI...</p>
       <p>May take upto 2-3 minutes</p>
-      <!-- You could add a CSS spinner here -->
+      <div class="spinner"></div>
     </div>
 
   {:else if state === 'answering' || state === 'graded'}
@@ -90,6 +152,22 @@
 </div>
 
 <style>
+
+  /* --- ENHANCEMENT: ADDED A CSS SPINNER --- */
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--panel-header-border);
+    border-top-color: var(--panel-accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+    margin: 0 auto;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
   .view-container { padding: 0; }
   .idle-view, .status-view {
     padding: 24px;

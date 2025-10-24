@@ -8,6 +8,7 @@
 
   const videoId = new URLSearchParams(window.location.search).get('videoId');
   const CACHE_KEY = `chat_history_${videoId}`; // A clear, unique key for our cache
+  const DRAFT_KEY = `chat_draft_${videoId}`;
 
   // State Management
   let state = 'initializing'; // 'initializing' | 'ready' | 'processing'
@@ -31,6 +32,14 @@
       console.log('[ChatView] No chat in cache. Initializing with welcome message.');
       chatHistory = [initialMessage];
     }
+
+    // Load any unsent draft
+   const draft = await getDraft(DRAFT_KEY);
+   if (draft) {
+     userInput = draft;
+     console.log('[ChatView] Restored unsent draft from cache.');
+   }
+
     state = 'ready';
 
     // 2. Add the listener for background messages (unchanged)
@@ -72,6 +81,12 @@
     }
   }
 
+  // Watch for input changes and save drafts
+//  $: if (userInput !== undefined) {
+//    saveDraft(DRAFT_KEY, userInput);
+//  }
+
+
   // --- USER ACTIONS (handleSend and handleClearChat are now cache-aware) ---
   async function handleSend() {
     if (userInput.trim() === '' || state === 'processing') return;
@@ -82,7 +97,8 @@
     // Save to cache immediately after the user sends their message
     await saveChatToCache();
 
-    userInput = '';
+    userInput = ''; // clear after send
+    await clearDraft(DRAFT_KEY);
     state = 'processing';
 
     chrome.runtime.sendMessage({
@@ -104,7 +120,7 @@
     
     // Save the new "initial" state to the cache
     await saveChatToCache();
-
+    await clearDraft(DRAFT_KEY);
     state = 'ready';
     console.log('[ChatView] Chat cleared and cache reset.');
   }
@@ -128,6 +144,19 @@
     });
     console.log('[ChatView] Chat history saved to cache.');
   }
+
+  async function saveDraft(key, value) {
+    await chrome.storage.local.set({ [key]: value });
+  }
+ 
+  async function getDraft(key) {
+    const result = await chrome.storage.local.get([key]);
+    return result[key] || '';
+  }
+ 
+  async function clearDraft(key) {
+    await chrome.storage.local.remove(key);
+  }
 </script>
 
 <div class="view-container">
@@ -142,13 +171,21 @@
       placeholder="Ask a question... (Cmd+Enter to send)"
       bind:value={userInput}
       disabled={state !== 'ready'}
-      on:keydown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSend(); } }}
+      maxlength="999"
+      on:input={() => saveDraft(DRAFT_KEY, userInput)}
+      on:keydown={(e) => { 
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { 
+          e.preventDefault(); 
+          handleSend(); 
+        } 
+      }}
     ></textarea>
     <button on:click={handleSend} disabled={state !== 'ready'}>Send</button>
   </div>
   
   <div class="footer">
     <button class="clear-button" on:click={handleClearChat}>Clear Chat</button>
+    <p class="char-counter">{userInput.length}/999</p>
   </div>
 </div>
 
@@ -211,7 +248,9 @@
   .footer {
     padding: 8px 16px;
     border-top: 1px solid var(--panel-header-border);
-    text-align: center;
+    display: flex; /* Use flexbox for alignment */
+    justify-content: space-between; /* Space between elements */
+    align-items: center; /* Center vertically */
   }
   .clear-button {
     font-size: 12px;
@@ -219,5 +258,10 @@
     border: none;
     color: var(--panel-text-secondary);
     cursor: pointer;
+  }
+  .char-counter {
+    font-size: 12px;
+    color: var(--panel-text-secondary);
+    margin: 0; /* Remove margin for better alignment */
   }
 </style>

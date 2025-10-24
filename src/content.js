@@ -93,10 +93,31 @@ function scrapePlaylistData() {
   return videos;
 }
 
+function getPlaylistThumbnailUrl() {
+  const selectors = [
+    '.yt-page-header-view-model__page-header-headline-image-hero-container img',
+    'ytd-hero-playlist-thumbnail-renderer img',
+    'ytd-playlist-header-renderer img',
+    'yt-image img',
+    'img.yt-core-image'  // generic fallback
+  ];
+
+  for (const selector of selectors) {
+    const el = document.querySelector(selector);
+    if (el?.src) {
+      console.log(`[TubeTutor] Found thumbnail via selector: ${selector}`);
+      return el.src;
+    }
+  }
+
+  console.warn('[TubeTutor] Could not find playlist thumbnail image in known selectors.');
+  return '';
+}
+
 function addEnrollButton() {
   const isPlaylistPage = window.location.href.includes("youtube.com/playlist?list=");
   if (!isPlaylistPage) return;
-  const targetContainer = document.querySelector('.ytFlexibleActionsViewModelActionRow') || document.querySelector('#top-level-buttons-computed');
+  const targetContainer = document.querySelector("#page-manager > ytd-browse > ytd-playlist-header-renderer > div > div.immersive-header-content.style-scope.ytd-playlist-header-renderer > div.thumbnail-and-metadata-wrapper.style-scope.ytd-playlist-header-renderer > div > div.play-menu.spaced-row.wide-screen-form.style-scope.ytd-playlist-header-renderer") || document.querySelector('.ytFlexibleActionsViewModelActionRow') || document.querySelector('#top-level-buttons-computed');
   if (!targetContainer || document.getElementById('tubetutor-enroll-btn')) return;
   const playlistId = new URLSearchParams(window.location.search).get('list');
   chrome.runtime.sendMessage(
@@ -168,13 +189,8 @@ function createAndAppendButton(targetContainer, playlistId, isAlreadyEnrolled) {
             const fullTitle = creatorName ? `${playlistTitle} by ${creatorName}` : playlistTitle;
             console.log(`[TubeTutor] Fulltitle: ${fullTitle}`);
             const videos = scrapePlaylistData();
-            const thumbnailElement = document.querySelector('.yt-page-header-view-model__page-header-headline-image-hero-container img');
-            console.log('[TubeTutor] Thumbnail element:', thumbnailElement);
-            const thumbnailUrl = thumbnailElement ? thumbnailElement.src : '';
-            if (!thumbnailUrl) {
-                console.warn('[TubeTutor] Could not find playlist thumbnail image.');
-            }
-            console.log(`[TubeTutor] thumbnail URL: ${thumbnailUrl}`);
+            const thumbnailUrl = getPlaylistThumbnailUrl();
+            console.log(`[TubeTutor] Thumbnail URL: ${thumbnailUrl}`);
             const url = window.location.href;
             console.log(`[TubeTutor] playlist URL: ${url}`)
             chrome.runtime.sendMessage({

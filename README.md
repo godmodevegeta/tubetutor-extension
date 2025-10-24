@@ -1,53 +1,120 @@
-# TubeTutor
+# Maddie — Your Personal AI Learning Companion for YouTube  
 
-## The Problem
+![alt text](Maddie.png "Title")
 
-We've all been there. You find a fantastic 20-part Python tutorial or a deep-dive history course on YouTube, ready to learn. A week later, you come back to a sea of red progress bars. Which video were you on? How much time is left? You're passively watching, not actively learning, and the valuable knowledge gets lost as soon as you close the tab. YouTube is the world's biggest classroom, but it lacks the tools of a real classroom.
+## Inspiration  
 
-## The Solution: TubeTutor
+YouTube is the world’s biggest classroom — but it forgot the students.  
 
-TubeTutor is a Chrome extension that transforms YouTube playlists into interactive, trackable courses. It acts as a smart layer on top of YouTube, managing your progress and turning passive viewing into active learning with a powerful, on-device AI toolkit. With TubeTutor, you can enroll in any playlist, track your progress automatically, and instantly generate notes, flashcards, and quizzes for any video—all privately and offline.
+Every day, millions of learners watch educational content on YouTube: coding tutorials, lectures, science explainers, and crash courses. Yet, after a few days, most can’t remember where they left off or what they learned. The learning experience is passive — a red progress bar, no structure, no reinforcement, no reflection.  
 
-## The "Magic" - Why Built-in AI is a Game Changer
+I wanted to change that.  
 
-- **Instantaneous**: When you click "Generate Notes," they appear in a blink. There's no lag, no loading spinner, no waiting for a server. This is the power of the on-device Summarizer API.
+The inspiration for **Maddie** came from two observations:  
+1. **YouTube is already where students learn.** They just lack the scaffolding and feedback of a real classroom.  
+2. **Active learning works.** Studies show that learners who take notes, quiz themselves, and reflect retain information far better than passive viewers.  
 
-- **Completely Private**: Your learning journey—the courses you take, the notes you generate, your quiz scores—is your business. Because all AI processing happens on your device, your data never leaves your computer.
+Maddie is built to bridge those worlds — turning passive watching into active understanding.  
 
-- **Always Available**: On a plane with no Wi-Fi? You can still review all your notes and practice with your generated flashcards and quizzes. Your classroom is now fully offline.
+---
 
-- **Unlimited & Free**: No API keys, no usage limits, no subscriptions. TubeTutor can help you learn as much as you want, without ever hitting a paywall, because the AI is built right into Chrome.
+## What it does  
 
-## Refined Demo Flow & User Experience
+**Maddie** is a Chrome extension that transforms any YouTube playlist into an interactive, trackable course — powered entirely by on-device AI.  
 
-This flow is designed to be seamless and "just work" with intuitive design.
+Here’s how she helps you learn better:  
 
-### Discovery & Enrollment
+- 🎓 **Enroll in Playlists**: With one click, you can turn any YouTube playlist into a “course.” Maddie tracks your progress and completed videos.  
+- 🧠 **AI Learning Toolkit**: As you watch, Maddie can instantly generate **notes** and **quizzes** from the video context — all locally, without sending your data anywhere.  
+- 💬 **Ask Maddie Why**: Got a quiz question wrong? Click “Ask Maddie Why,” and she’ll explain why the correct answer makes sense — just like a real tutor.  
+- 🔍 **Knowledge Search**: Search across everything you’ve learned. Ask, *“What did I learn about decision trees?”* — Maddie will find it across your notes and transcripts.  
+- 🔒 **Completely Private**: All AI processing happens **on-device** using Chrome’s **Summarizer** and **Prompt APIs** — no API keys, no servers, no user tracking.  
+- 🎯 **Seamless UX**: Maddie’s panel is minimal and native to YouTube — designed to feel invisible until you need it.  
 
-A user navigates to a YouTube playlist. The TubeTutor icon in their browser bar lights up, and a clean, non-intrusive button appears on the page: **"Enroll in this Course."**
+In short, Maddie transforms YouTube from a place to *watch* into a place to *learn.*  
 
-Clicking it adds the playlist to the TubeTutor Dashboard. An elegant overlay appears briefly, confirming enrollment and showing progress: *"Course Added! 0/20 videos complete. Approx. 4 hours remaining."*
+---
 
-### The Learning Interface
+## How we built it  
 
-As the user watches a video, TubeTutor provides a small, collapsible sidebar. This is the **"AI Learning Toolkit."**
+Maddie is a **modular Chrome extension** built with:  
 
-- **Generate Notes**: A single click on this button uses the video's transcript and the Summarizer API to instantly produce clean, concise, timestamped bullet points.
-  - *Example: "04:15 - Introduction to variables and data types."*
+- **Frontend:** Svelte 4 (chosen for performance and lightweight DOM reactivity)  
+- **AI:** Chrome’s **on-device Summarizer API** for instant note and quiz generation, and the **Prompt API** for conversational explanations  
+- **Architecture:**  
+  - **Content script** injects Maddie’s video panel directly into YouTube pages  
+  - **Background service worker** handles transcript extraction, AI prompt orchestration, and caching  
+  - **IndexedDB** stores enrolled courses, notes, flashcards, and quiz attempts  
+  - **Dynamic video panel** powered by Svelte mounts seamlessly under the YouTube video player  
 
-- **Generate Flashcards**: Clicking this uses the Prompt API to create a set of Q&A-style flashcards based on the video's key concepts, which the user can flip through to test their knowledge.
+Key design goals:  
+- No external servers or APIs — fully privacy-preserving  
+- Native-feeling integration with minimal UI footprint  
+- Reactive persistence: quiz states, user progress, and notes survive tab changes  
 
-- **Take a Quiz**: This uses the Prompt API with a more structured request to generate 3-5 multiple-choice questions about the video's content, providing instant feedback.
+The workflow looks like this:  
 
-### The Course Dashboard
+1. Detect playlist → offer “Enroll” button  
+2. Extract transcript (using fallback strategies for both auto-generated and uploaded captions)  
+3. Process transcript locally with Summarizer API → notes  
+4. Generate quiz schema using Prompt API → multiple-choice questions  
+5. Persist results in local storage and update dashboard progress  
 
-This is the central hub, accessible from the extension's icon. It lists all "enrolled" courses.
+---
 
-- Each course has a clear progress bar, ETA, and a link back to the playlist.
-- Users can expand a course to view all their generated notes, flashcards, and quiz results in one place, creating a comprehensive study guide.
+## Challenges we ran into  
 
-### The "Wow" Feature - The Knowledge Search
+1. **Transcript Extraction:**  
+   YouTube doesn’t expose a clean transcript API, and auto-generated captions use multiple formats and access layers. Handling these inconsistencies across languages and layouts was the hardest engineering challenge.  
 
-The dashboard has a search bar. The user can type a question like, *"What did I learn about 'for loops' in Python?"*
+2. **Svelte 5 Compatibility:**  
+   We initially tried building the UI with Svelte 5, but Chrome’s content script isolation broke Svelte’s `$state` reactivity. We reverted to Svelte 4 for stability.  
 
-Using the Prompt API, TubeTutor searches across the notes and transcripts of all enrolled courses, providing a consolidated answer with links to the exact moments in the videos where the topic was discussed. This transforms the extension from a simple tracker into a personal, searchable learning database.
+3. **TrustedHTML & CSP Restrictions:**  
+   YouTube enforces strict content security policies. Injecting UI components sometimes threw `TrustedHTML` errors. We solved this with a secure script injection layer and a custom `TrustedTypePolicy`.  
+
+4. **Persisting State Across Tabs:**  
+   When users navigated between videos, the quiz state reset. We introduced a lightweight state synchronization mechanism using Chrome’s `storage.local` and reactive hydration on mount.  
+
+5. **Balancing Minimalism and Power:**  
+   The biggest design tradeoff was keeping Maddie helpful without overwhelming the YouTube interface. We iterated heavily on micro-interactions and visual hierarchy.  
+
+---
+
+## Accomplishments that we're proud of  
+
+- Successfully used **on-device AI** (Summarizer + Prompt APIs) to create a fully functional learning companion — **no servers, no OpenAI keys.**  
+- Built a **fluid, reactive UI** that feels native to YouTube.  
+- Implemented a **personalized quiz system** with local grading and “Ask Maddie Why” explanations — our most delightful feature.  
+- Designed a **persistent progress dashboard** that truly makes YouTube feel like a course platform.  
+- Most of all, we made something that *feels human* — Maddie isn’t just an app, she’s a presence that helps you learn better.  
+
+---
+
+## What we learned  
+
+- **Simplicity beats sophistication.** Early prototypes tried to do too much. The magic came from minimal, seamless integration.  
+- **On-device AI is the future.** It’s faster, cheaper, and inherently private — an ideal model for educational tools.  
+- **User experience is everything.** Even great AI features fail if they feel interruptive. By treating UX as part of the learning flow, not a layer above it, we built something users enjoy using.  
+- **Good engineering is invisible.** The more Maddie blended into YouTube, the more natural she felt.  
+
+---
+
+## What's next for Maddie  
+
+We see Maddie evolving into **the universal active learning layer for video education.**  
+
+Next steps:  
+- **Cross-platform expansion:** Support for Coursera, Udemy, and Skillshare.  
+- **Collaborative learning:** Shared notes, quizzes, and progress with study partners.  
+- **Adaptive learning engine:** Personalized quiz difficulty and content recommendations.  
+- **Voice-based interaction:** “Hey Maddie, summarize this lecture for me.”  
+- **Analytics dashboard:** Track learning time, retention, and growth insights.  
+
+Our goal is to make learning from videos **as structured, measurable, and interactive** as a classroom — but infinitely more personal.  
+
+---
+
+> *“YouTube is the world’s biggest classroom. Maddie makes it a real one.”*  
+
+---

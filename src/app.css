@@ -1,0 +1,62 @@
+/* File: src/svelte-app/app.css (Definitive Version) */
+
+/* 1. Global Reset & Transparency */
+html, body {
+  /* This is the key to the rounded corner illusion */
+  background-color: transparent;
+
+  /* Reset browser defaults */
+  margin: 0;
+  padding: 0;
+  font-family: "Roboto", "Arial", sans-serif;
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+/* 2. This is the new, critical part. We style the 'main' element GLOBALLY. */
+/*    This is the root element of our App.svelte component. */
+main {
+  /* Shape & Size */
+  width: 380px;
+  min-height: 200px;
+  max-height: 500px;
+  
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  
+  /* The "Window Illusion" styles, now with higher priority */
+  border-radius: 12px;
+  overflow: hidden;
+  
+  /* We must use hardcoded fallbacks here, as we can't access Svelte's variables.
+     These are the standard light and dark mode colors. */
+  background-color: #ffffff; /* Light mode bg */
+  color: #0f0f0f;         /* Light mode text */
+}
+
+/* 3. Dark Mode overrides for the main element */
+@media (prefers-color-scheme: dark) {
+  main {
+    background-color: #212121; /* Dark mode bg */
+    color: #ffffff;         /* Dark mode text */
+  }
+}
+
+/* 4. Consistent Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #aaaaaa;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ffffff;
+}

@@ -5,12 +5,15 @@
   "description": "Transforms YouTube playlists into interactive courses with AI-powered study tools.",
   
   "permissions": [
-    "storage",
-    "scripting"
+     "storage",
+     "scripting",
+     "cookies"
   ],
   
   "host_permissions": [
-    "https://www.youtube.com/*"
+    "https://www.youtube.com/*",
+    "https://*.googlevideo.com/*",
+    "https://tactiq-apps-prod.tactiq.io/*"
   ],
   
   "background": {
@@ -25,7 +28,7 @@
   ],
   
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "index.html",
     "default_icon": {
       "16": "images/icon16.png",
       "48": "images/icon48.png",
@@ -37,6 +40,14 @@
     "16": "images/icon16.png",
     "48": "images/icon48.png",
     "128": "images/icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "panel.html",
+        "assets/*"
+      ],
+      "matches": [ "https://www.youtube.com/*" ]
+    }
+  ]
 }
-

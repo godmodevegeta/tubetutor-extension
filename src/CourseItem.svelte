@@ -23,7 +23,7 @@
 </script>
 
 <a href={course.url} target="_blank" rel="noopener noreferrer" class="course-item" title={course.title}>
-    <button 
+    <!-- <button 
     class="completion-button" 
     title={course.isCompleted ? 'Mark as In-Progress' : 'Mark as Completed'}
     on:click={handleToggleComplete}
@@ -33,12 +33,27 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
       {/if}
     </div>
-  </button>
+  </button> -->
   <div class="thumbnail" style="background-image: url({course.thumbnailUrl})"></div>
 
   <div class="course-info">
     <span class="course-title">{course.title}</span>
-    <span class="course-video-count">{course.videos?.length || 0} videos</span>
+    <!-- <span class="course-video-count">{course.videos?.length || 0} videos</span> -->
+    <span class="course-video-count">
+      {course.videos?.length || 0} videos
+      <span class="divider"> | </span>
+      <span 
+        class="completion-text" 
+        on:click={handleToggleComplete}
+        title={course.isCompleted ? 'Mark as In-Progress' : 'Mark as Completed'}
+      >
+        {#if course.isCompleted}
+          <i>Mark In-Progress</i>
+        {:else}
+          <i>Mark Completed</i>
+        {/if}
+      </span>
+    </span>
   </div>
 
   <button class="unenroll-button" title="Un-enroll from course" on:click={handleUnenroll}>
@@ -127,12 +142,36 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    direction: rtl; /* visually truncates middle when container too small */
+    text-align: left;
   }
   .course-video-count {
     font-size: 12px;
     color: var(--panel-text-secondary);
     display: block;
   }
+  .divider {
+   margin: 0 4px;
+   color: var(--panel-text-secondary);
+ }
+
+ .completion-text {
+   cursor: pointer;
+   font-size: 12px;
+   font-style: italic;
+   color: var(--panel-text-secondary);
+   transition: color 0.2s ease;
+ }
+
+ .completion-text:hover {
+   color: var(--panel-accent-blue);
+   text-decoration: underline;
+ }
+
+ .course-item.completed .completion-text {
+   color: var(--panel-accent-blue);
+   font-style: italic;
+ }
 
   /* Un-enroll Button */
   .unenroll-button {

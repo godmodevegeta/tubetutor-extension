@@ -1,6 +1,6 @@
 # Maddie — Your Personal AI Learning Companion for YouTube  
 
-![alt text](Maddie.png "Title")
+![alt text](Maddie.png "Hey Maddie!")
 
 ## Inspiration  
 
@@ -115,6 +115,6 @@ Our goal is to make learning from videos **as structured, measurable, and intera
 
 ---
 
-> *“YouTube is the world’s biggest classroom. Maddie makes it a real one.”*  
+> *“YouTube is the world’s biggest classroom. Maddie makes it a real one.”*  <
 
 ---

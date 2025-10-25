@@ -115,6 +115,6 @@ Our goal is to make learning from videos **as structured, measurable, and intera
 
 ---
 
-> *“YouTube is the world’s biggest classroom. Maddie makes it a real one.”*  <
+> *“YouTube is the world’s biggest classroom. Maddie is a small attempt to make it close to a real one.”*
 
 ---

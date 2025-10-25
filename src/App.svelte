@@ -56,7 +56,7 @@
         <img src="/images/icon128.png" alt="Maddie, your AI Tutor" class="app-icon" />
         <div class="header-text">
             <h1 class="header-title">Hey there, I'm Maddie</h1>
-            <p class="header-subtitle">Your Personal AI Tutor</p>
+            <p class="header-subtitle">What are we learning today?</p>
         </div>
     </div>
     <div class="search-container">

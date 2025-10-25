@@ -2,6 +2,8 @@
 <script>
   import { onMount, onDestroy, afterUpdate } from 'svelte';
   import ChatMessage from './ChatMessage.svelte';
+  import { chatCommand } from './stores.js';
+
 
   export let transcript;
   // export let transcriptError;
@@ -124,6 +126,23 @@
     state = 'ready';
     console.log('[ChatView] Chat cleared and cache reset.');
   }
+
+  // Subscribe to the chatCommand store
+  chatCommand.subscribe(command => {
+    if (command && command.type === 'ASK_WHY') {
+      const { question, userAnswer, correctAnswer } = command.context;
+      
+      // Construct the detailed prompt
+      const prompt = `I'm studying a quiz about the video. Can you help me understand one of the questions?\n\nQuestion: "${question}"\n\nI answered "${userAnswer}", but the correct answer is "${correctAnswer}".\n\nBased on the video context, can you please explain why "${correctAnswer}" is the right answer and why my choice was incorrect?`;
+      
+      // Set the input and auto-send
+      userInput = prompt;
+      handleSend();
+
+      // IMPORTANT: Clear the command so it doesn't run again
+      chatCommand.set(null);
+    }
+  });
 
   // --- CACHING HELPERS (CORRECTED) ---
   async function getFromCache(key) {

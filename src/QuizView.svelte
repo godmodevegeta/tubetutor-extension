@@ -3,8 +3,12 @@
 <script>
   import { onMount } from 'svelte';
   import Question from './Question.svelte';
+  import { chatCommand } from './stores.js';
 
   const videoId = new URLSearchParams(window.location.search).get('videoId');
+
+  // This prop will be passed down from VideoPanel
+  export let onNavigate;
 
   // Our State Machine
   let state = 'idle'; // 'idle' | 'generating' | 'answering' | 'graded'
@@ -109,6 +113,21 @@
   function handleRetry() {
     chrome.storage.local.remove(videoId, () => generateQuiz(true));
   }
+  function handleAskWhy(questionData, userAnswerIndex) {
+    const command = {
+      type: 'ASK_WHY',
+      context: {
+        question: questionData.question,
+        options: questionData.options,
+        userAnswer: questionData.options[userAnswerIndex],
+        correctAnswer: questionData.options[questionData.correctAnswerIndex]
+      }
+    };
+    // 1. Set the command in the store
+    chatCommand.set(command);
+    // 2. Tell the parent panel to switch tabs
+    onNavigate('Chat');
+  }
 </script>
 
 <div class="view-container">
@@ -136,6 +155,7 @@
           questionIndex={i}
           isGraded={state === 'graded'}
           bind:userAnswer={userAnswers[i]}
+          on:askwhy={() => handleAskWhy(questionData, userAnswers[i])}
         />
       {/each}
     </div>

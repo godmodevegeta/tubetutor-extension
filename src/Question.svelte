@@ -1,6 +1,9 @@
 <!-- File: src/Question.svelte -->
 
 <script>
+  import { createEventDispatcher } from 'svelte';
+  const dispatch = createEventDispatcher();
+
   export let questionData; // The question object from our JSON schema
   export let questionIndex; // The index (e.g., "1.", "2.")
   export let isGraded = false; // Is the quiz in the "graded" state?
@@ -37,6 +40,9 @@
     <p class="correct-answer-text">
       Correct answer: {questionData.options[questionData.correctAnswerIndex]}
     </p>
+    <button type="button" class="explanation-link" on:click={() => dispatch('askwhy')}>
+      Ask Maddie Why
+    </button>
   {/if}
 </div>
 
@@ -74,5 +80,22 @@
     font-size: 13px;
     font-weight: 500;
     color: var(--panel-text-primary);
+  }
+  .explanation-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit; /* Inherit the component's font */
+    text-align: right; /* Keep it aligned to the right */
+    
+    /* --- Original styles --- */
+    margin-top: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--panel-accent, #3ea6ff);
+    cursor: pointer;
+  }
+  .explanation-link:hover {
+    text-decoration: underline;
   }
 </style>

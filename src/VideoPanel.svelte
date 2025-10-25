@@ -5,6 +5,7 @@
   import QuizView from './QuizView.svelte';
   import ChatView from './ChatView.svelte';
   import { onMount } from 'svelte';
+  import { chatCommand } from './stores.js';
 
   const urlParams = new URLSearchParams(window.location.search);
   const videoId = urlParams.get('videoId');
@@ -34,6 +35,10 @@
       }
     );
   });
+  // This function will be passed down to the child components
+  function navigateTo(viewName) {
+    activeView = viewName;
+  }
 </script>
 
 <!-- --- THE DEFINITIVE THEME FIX --- -->
@@ -100,7 +105,12 @@
     <!-- This is the magic of Svelte. The <svelte:component> tag
          dynamically renders the component specified by 'views[activeView]'.
          When 'activeView' changes, this component automatically swaps. -->
-    <svelte:component this={views[activeView]} {transcript} {transcriptError} />
+    <svelte:component 
+      this={views[activeView]} 
+      {transcript} 
+      {transcriptError} 
+      onNavigate={navigateTo}
+    />
   </div>
 
 </div>

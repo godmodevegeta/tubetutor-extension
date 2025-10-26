@@ -35,7 +35,7 @@ To get Maddie up and running, please follow these steps carefully.
 
 ### Step 1: Enable Chrome's On-Device AI
 
-1.  Open Chrome and navigate to `chrome://flags/#prompt-api-for-gemini-nano`.
+1.  Open Chrome and navigate to `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` & `chrome://flags/#summarization-api-for-gemini-nano`.
 2.  Select **"Enabled"** from the dropdown menu.
 3.  Navigate to `chrome://flags/#optimization-guide-on-device-model`.
 4.  Select **"Enabled BypassPerfRequirement"** from the dropdown. This is crucial to ensure the model downloads regardless of background performance checks.

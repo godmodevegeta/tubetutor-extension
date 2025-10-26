@@ -1,120 +1,105 @@
-# Maddie — Your Personal AI Learning Companion for YouTube  
-
+# Maddie — Your Personal AI Learning Companion for YouTube
 ![alt text](Maddie.png "Hey Maddie!")
 
-## Inspiration  
-
-YouTube is the world’s biggest classroom — but it forgot the students.  
-
-Every day, millions of learners watch educational content on YouTube: coding tutorials, lectures, science explainers, and crash courses. Yet, after a few days, most can’t remember where they left off or what they learned. The learning experience is passive — a red progress bar, no structure, no reinforcement, no reflection.  
-
-I wanted to change that.  
-
-The inspiration for **Maddie** came from two observations:  
-1. **YouTube is already where students learn.** They just lack the scaffolding and feedback of a real classroom.  
-2. **Active learning works.** Studies show that learners who take notes, quiz themselves, and reflect retain information far better than passive viewers.  
-
-Maddie is built to bridge those worlds — turning passive watching into active understanding.  
+Maddie is a Chrome extension that transforms any YouTube playlist into an interactive, private, and AI-powered course. She's your personal AI tutor, helping you learn faster and remember more by turning passive watching into active, engaged learning.
 
 ---
 
-## What it does  
+## 🚀 Key Features
 
-**Maddie** is a Chrome extension that transforms any YouTube playlist into an interactive, trackable course — powered entirely by on-device AI.  
-
-Here’s how she helps you learn better:  
-
-- 🎓 **Enroll in Playlists**: With one click, you can turn any YouTube playlist into a “course.” Maddie tracks your progress and completed videos.  
-- 🧠 **AI Learning Toolkit**: As you watch, Maddie can instantly generate **notes** and **quizzes** from the video context — all locally, without sending your data anywhere.  
-- 💬 **Ask Maddie Why**: Got a quiz question wrong? Click “Ask Maddie Why,” and she’ll explain why the correct answer makes sense — just like a real tutor.  
-- 🔍 **Knowledge Search**: Search across everything you’ve learned. Ask, *“What did I learn about decision trees?”* — Maddie will find it across your notes and transcripts.  
-- 🔒 **Completely Private**: All AI processing happens **on-device** using Chrome’s **Summarizer** and **Prompt APIs** — no API keys, no servers, no user tracking.  
-- 🎯 **Seamless UX**: Maddie’s panel is minimal and native to YouTube — designed to feel invisible until you need it.  
-
-In short, Maddie transforms YouTube from a place to *watch* into a place to *learn.*  
+-   🎓 **Enroll in Playlists**: Turn any YouTube playlist into a structured "course" with a single click.
+-   🧠 **AI-Powered Notes**: Instantly generate concise, bullet-point summaries of any video using on-device AI.
+-   📝 **Personalized Quizzes**: Test your knowledge with AI-generated multiple-choice quizzes based on the video's content.
+-   💬 **Conversational Learning**: Chat with Maddie to clarify doubts, explore concepts, and get instant explanations grounded in the video's transcript.
+-   🔐 **100% Private**: All AI processing happens **on your device** using Chrome's built-in Gemini Nano model. Your data never leaves your computer.
+-   📊 **Dashboard**: Manage all your enrolled courses, track completed lessons, and revisit your study materials from a clean, efficient popup.
 
 ---
 
-## How we built it  
+## 🛠️ Prerequisites & Installation
 
-Maddie is a **modular Chrome extension** built with:  
+To get Maddie up and running, please follow these steps carefully.
 
-- **Frontend:** Svelte 4 (chosen for performance and lightweight DOM reactivity)  
-- **AI:** Chrome’s **on-device Summarizer API** for instant note and quiz generation, and the **Prompt API** for conversational explanations  
-- **Architecture:**  
-  - **Content script** injects Maddie’s video panel directly into YouTube pages  
-  - **Background service worker** handles transcript extraction, AI prompt orchestration, and caching  
-  - **IndexedDB** stores enrolled courses, notes, flashcards, and quiz attempts  
-  - **Dynamic video panel** powered by Svelte mounts seamlessly under the YouTube video player  
+### System Requirements
 
-Key design goals:  
-- No external servers or APIs — fully privacy-preserving  
-- Native-feeling integration with minimal UI footprint  
-- Reactive persistence: quiz states, user progress, and notes survive tab changes  
+-   **Google Chrome:** Version **127** or newer (Stable, Beta, or Dev channel).
+-   **Operating System:** Windows 10/11, macOS 13+, Linux, or ChromeOS (on Chromebook Plus).
+-   **Hardware:**
+    -   **GPU:** More than 4 GB of VRAM.
+    -   **CPU:** 16 GB of RAM or more, with 4+ CPU cores.
+-   **Storage:** At least **22 GB of free disk space** for the AI models.
 
-The workflow looks like this:  
+> **Note:** The `LanguageModel` APIs and Gemini Nano are cutting-edge. These requirements ensure the models can be downloaded and run efficiently on your machine.
 
-1. Detect playlist → offer “Enroll” button  
-2. Extract transcript (using fallback strategies for both auto-generated and uploaded captions)  
-3. Process transcript locally with Summarizer API → notes  
-4. Generate quiz schema using Prompt API → multiple-choice questions  
-5. Persist results in local storage and update dashboard progress  
+### Step 1: Enable Chrome's On-Device AI
 
----
+1.  Open Chrome and navigate to `chrome://flags/#prompt-api-for-gemini-nano`.
+2.  Select **"Enabled"** from the dropdown menu.
+3.  Navigate to `chrome://flags/#optimization-guide-on-device-model`.
+4.  Select **"Enabled BypassPerfRequirement"** from the dropdown. This is crucial to ensure the model downloads regardless of background performance checks.
+5.  Click the **"Relaunch"** button at the bottom of the screen to apply the changes.
 
-## Challenges we ran into  
+### Step 2: Download the Project
 
-1. **Transcript Extraction:**  
-   YouTube doesn’t expose a clean transcript API, and auto-generated captions use multiple formats and access layers. Handling these inconsistencies across languages and layouts was the hardest engineering challenge.  
+Clone the repository to your local machine:
+```bash
+git clone https://github.com/godmodevegeta/tubetutor-extension.git
+```
+Navigate into the project directory:
+```bash
+cd maddie-extension
+```
 
-2. **Svelte 5 Compatibility:**  
-   We initially tried building the UI with Svelte 5, but Chrome’s content script isolation broke Svelte’s `$state` reactivity. We reverted to Svelte 4 for stability.  
+### Step 3: Install Dependencies
 
-3. **TrustedHTML & CSP Restrictions:**  
-   YouTube enforces strict content security policies. Injecting UI components sometimes threw `TrustedHTML` errors. We solved this with a secure script injection layer and a custom `TrustedTypePolicy`.  
+This project uses Node.js and `npm` to manage dependencies and build the source code.
+```bash
+npm install
+```
 
-4. **Persisting State Across Tabs:**  
-   When users navigated between videos, the quiz state reset. We introduced a lightweight state synchronization mechanism using Chrome’s `storage.local` and reactive hydration on mount.  
+### Step 4: Run the Development Build
 
-5. **Balancing Minimalism and Power:**  
-   The biggest design tradeoff was keeping Maddie helpful without overwhelming the YouTube interface. We iterated heavily on micro-interactions and visual hierarchy.  
+This command will compile the Svelte application and watch for any file changes, automatically rebuilding as you work.
+```bash
+npm run dev
+```
+This will create a `dist` folder in your project directory. This folder contains the final, compiled extension.
 
----
+### Step 5: Load the Extension in Chrome
 
-## Accomplishments that we're proud of  
+1.  Open Chrome and navigate to `chrome://extensions/`.
+2.  Enable **"Developer mode"** using the toggle in the top-right corner.
+3.  Click the **"Load unpacked"** button.
+4.  In the file selection dialog, choose the **`dist`** folder that was created in the previous step.
+5.  Maddie should now appear in your list of extensions, and her icon will be in your Chrome toolbar.
 
-- Successfully used **on-device AI** (Summarizer + Prompt APIs) to create a fully functional learning companion — **no servers, no OpenAI keys.**  
-- Built a **fluid, reactive UI** that feels native to YouTube.  
-- Implemented a **personalized quiz system** with local grading and “Ask Maddie Why” explanations — our most delightful feature.  
-- Designed a **persistent progress dashboard** that truly makes YouTube feel like a course platform.  
-- Most of all, we made something that *feels human* — Maddie isn’t just an app, she’s a presence that helps you learn better.  
-
----
-
-## What we learned  
-
-- **Simplicity beats sophistication.** Early prototypes tried to do too much. The magic came from minimal, seamless integration.  
-- **On-device AI is the future.** It’s faster, cheaper, and inherently private — an ideal model for educational tools.  
-- **User experience is everything.** Even great AI features fail if they feel interruptive. By treating UX as part of the learning flow, not a layer above it, we built something users enjoy using.  
-- **Good engineering is invisible.** The more Maddie blended into YouTube, the more natural she felt.  
+You're all set! Navigate to a YouTube playlist to start learning.
 
 ---
 
-## What's next for Maddie  
+## 💡 How We Built It
 
-We see Maddie evolving into **the universal active learning layer for video education.**  
+Maddie is a modern Chrome extension built with a focus on privacy, performance, and a seamless user experience.
 
-Next steps:  
-- **Cross-platform expansion:** Support for Coursera, Udemy, and Skillshare.  
-- **Collaborative learning:** Shared notes, quizzes, and progress with study partners.  
-- **Adaptive learning engine:** Personalized quiz difficulty and content recommendations.  
-- **Voice-based interaction:** “Hey Maddie, summarize this lecture for me.”  
-- **Analytics dashboard:** Track learning time, retention, and growth insights.  
+-   **Frontend Framework:** **Svelte 4**, chosen for its high performance, minimal bundle size, and proven stability in extension environments.
+-   **On-Device AI:**
+    -   **`Summarizer API` (`chrome.ai.summarize`)**: Used for the "Notes" feature to generate instant, high-quality key points.
+    -   **`Prompt API` (`chrome.ai.prompt`)**: The core of our "Quiz" and "Chat" features, using a JSON schema for structured quiz output and a streaming, context-aware session for conversational learning.
+-   **Architecture:**
+    -   **`<iframe>` Sandbox:** The entire Svelte UI is injected into an `<iframe>` on YouTube pages. This provides a perfect, hermetically-sealed sandbox, completely bypassing YouTube's strict Content Security Policies (CSP) and `TrustedHTML` requirements.
+    -   **Background Service Worker (`background.js`):** Acts as the central "brain." It manages all caching, orchestrates calls to the `chrome.ai` APIs, and handles data persistence in `chrome.storage.local`.
+    -   **Content Script (`content.js`):** A lightweight script whose only jobs are to detect the correct context (playlist vs. video page) and inject the UI (`<iframe>` or "Enroll" button).
+-   **Build Tool:** **Vite**, configured for a multi-entry-point extension build, ensuring a fast development loop and optimized output.
 
-Our goal is to make learning from videos **as structured, measurable, and interactive** as a classroom — but infinitely more personal.  
+---
+
+## 🏆 Accomplishments & Key Features
+
+-   **Truly Private AI:** Successfully leveraged the `chrome.ai` APIs to deliver powerful generative features with zero server-side processing. This is a huge win for user privacy and a core part of the project's philosophy.
+-   **Seamless Integration:** The `<iframe>` architecture provides a robust, crash-proof way to render a modern Svelte app inside a hostile third-party environment. The UI is themed to match YouTube and adapts to both light and dark modes.
+-   **The "Socratic Loop":** The "Ask Maddie Why" feature creates a powerful, interactive learning loop between the Quiz and Chat tabs, demonstrating a deep, cohesive integration between the extension's features.
+-   **Stateful & Persistent:** User data (enrolled courses, chat history, quizzes) is intelligently cached and persists across browser sessions, providing a continuous and reliable user experience.
 
 ---
 
-> *“YouTube is the world’s biggest classroom. Maddie is a small attempt to make it close to a real one.”*
-
----
+> *"YouTube is the world's biggest classroom. Maddie is an attempt to give every student a personal tutor."*

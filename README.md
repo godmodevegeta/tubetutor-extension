@@ -14,6 +14,8 @@ Maddie is a Chrome extension that transforms any YouTube playlist into an intera
 -   🔐 **100% Private**: All AI processing happens **on your device** using Chrome's built-in Gemini Nano model. Your data never leaves your computer.
 -   📊 **Dashboard**: Manage all your enrolled courses, track completed lessons, and revisit your study materials from a clean, efficient popup.
 
+![alt text](Maddie-feat.png "Hey Maddie-feat!")
+
 ---
 
 ## 🛠️ Prerequisites & Installation
@@ -33,7 +35,7 @@ To get Maddie up and running, please follow these steps carefully.
 
 ### Step 1: Enable Chrome's On-Device AI
 
-1.  Open Chrome and navigate to `chrome://flags/#prompt-api-for-gemini-nano`.
+1.  Open Chrome and navigate to `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` & `chrome://flags/#summarization-api-for-gemini-nano`.
 2.  Select **"Enabled"** from the dropdown menu.
 3.  Navigate to `chrome://flags/#optimization-guide-on-device-model`.
 4.  Select **"Enabled BypassPerfRequirement"** from the dropdown. This is crucial to ensure the model downloads regardless of background performance checks.
@@ -103,3 +105,5 @@ Maddie is a modern Chrome extension built with a focus on privacy, performance, 
 ---
 
 > *"YouTube is the world's biggest classroom. Maddie is an attempt to give every student a personal tutor."*
+
+---

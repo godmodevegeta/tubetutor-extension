@@ -62,7 +62,7 @@
         state = 'idle';
         chrome.storage.local.set({ [videoId]: { state } });
       }
-    }, 40000);
+    }, 120000);
     chrome.runtime.sendMessage(
       { type: 'GET_QUIZ', payload: { videoId, forceNew } },
       (response) => {
